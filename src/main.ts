@@ -3,6 +3,7 @@ import vertexShaderUrl from "./shaders/shader.vs.glsl?url";
 import fragmentShaderUrl from "./shaders/shader.fs.glsl?url";
 import { compileShaderProgram, createShader } from './rendering/render-utils';
 import { mat4 } from "gl-matrix";
+import Mesh from "./rendering/mesh";
 
 // -----------
 // -- SETUP --
@@ -29,6 +30,8 @@ run()
 // -- EXECUTION --
 // ---------------
 
+let meshes = new Array<Mesh>();
+
 const FOV = 45;
 const ASPECT_RATIO = CANVAS_WIDTH / CANVAS_HEIGHT;
 const TO_RADIANS = Math.PI / 180;
@@ -40,7 +43,7 @@ const TRI_MAX_OFFSET = 0.7;
 const TRI_INCREMENT = 1.0;
 
 let currentAngle = 0.0;
-const ANGLE_INCREMENT = 20.0;
+const ANGLE_INCREMENT = 40.0;
 
 let sizeDirection = true;
 let modelScale = 0.4;
@@ -49,12 +52,6 @@ const MAX_SCALE = 0.8;
 const SCALE_INCREMENT = 0.1;
 
 let shaderProgram: WebGLProgram | null = null;
-/** Vertex buffer object */
-let vbo: WebGLBuffer | null = null;
-/** Index buffer object */
-let ibo: WebGLBuffer | null = null;
-/** Vertex array object */
-let vao: WebGLVertexArrayObject | null = null;
 
 let uniformModel: WebGLUniformLocation | null = null;
 let projectionModel: WebGLUniformLocation | null = null;
@@ -82,27 +79,7 @@ function createTriangle() {
     0.0, 1.0, 0.0     // 3
   ];
 
-  // Create vertex buffer
-  vao = gl.createVertexArray();
-  gl.bindVertexArray(vao);
-  {
-    ibo = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indices), gl.STATIC_DRAW);
-
-    vbo = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
-    {
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-
-      gl.enableVertexAttribArray(0);
-      gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
-    }
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-  }
-  gl.bindVertexArray(null);
-
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+  meshes.push(new Mesh(gl, vertices, indices));
 }
 
 function updateTriangleModel(deltaTime: number): mat4 {
@@ -140,7 +117,7 @@ function updateTriangleModel(deltaTime: number): mat4 {
 }
 
 function update(time: DOMHighResTimeStamp): void {
-  if (!gl || !shaderProgram || !vbo || !vao) {
+  if (!gl || !shaderProgram) {
     console.error("A required rendering component is 'null'");
     return;
   }
@@ -161,13 +138,9 @@ function update(time: DOMHighResTimeStamp): void {
       gl.uniformMatrix4fv(uniformModel, false, new Float32Array(triModel));
       gl.uniformMatrix4fv(projectionModel, false, new Float32Array(projectionMatrix));
 
-      gl.bindVertexArray(vao);
-      {
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo);
-        gl.drawElements(gl.TRIANGLES, 12, gl.UNSIGNED_INT, 0);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+      for (const mesh of meshes) {
+        mesh.render();
       }
-      gl.bindVertexArray(null);
     }
     gl.useProgram(null);
   }
