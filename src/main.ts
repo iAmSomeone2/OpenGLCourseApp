@@ -6,6 +6,7 @@ import Mesh from "./rendering/mesh";
 import Shader from "./rendering/shader";
 import { downloadTextFile } from "./utils";
 import Model from "./rendering/model";
+import InputHandler from "./input";
 
 // -----------
 // -- SETUP --
@@ -21,6 +22,9 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 `;
 
 const canvas = document.getElementById(CANVAS_ID) as HTMLCanvasElement;
+
+// Set up user input
+const inputHandler = new InputHandler(canvas);
 
 const gl = canvas.getContext("webgl2");
 run()
@@ -40,11 +44,9 @@ const TO_RADIANS = Math.PI / 180;
 
 // Triangle state
 let direction = true;
-let triOffset = 0.0;
 const TRI_MAX_OFFSET = 0.7;
 const TRI_INCREMENT = 1.0;
 
-let currentAngle = 0.0;
 const ANGLE_INCREMENT = 80.0;
 
 let sizeDirection = true;
@@ -81,39 +83,39 @@ function createPyramidModel(shader: Shader): Model {
   return new Model(mesh, shader);
 }
 
-function updateTriangleModel(deltaTime: number): mat4 {
-  if (direction) {
-    triOffset += (TRI_INCREMENT * deltaTime);
-  } else {
-    triOffset -= (TRI_INCREMENT * deltaTime);
-  }
+// function updateTriangleModel(deltaTime: number): mat4 {
+//   if (direction) {
+//     triOffset += (TRI_INCREMENT * deltaTime);
+//   } else {
+//     triOffset -= (TRI_INCREMENT * deltaTime);
+//   }
 
-  if (Math.abs(triOffset) >= TRI_MAX_OFFSET) {
-    direction = !direction;
-  }
+//   if (Math.abs(triOffset) >= TRI_MAX_OFFSET) {
+//     direction = !direction;
+//   }
 
-  currentAngle += ANGLE_INCREMENT * deltaTime;
-  if (currentAngle >= 360.0) {
-    currentAngle -= 360.0;
-  }
+//   currentAngle += ANGLE_INCREMENT * deltaTime;
+//   if (currentAngle >= 360.0) {
+//     currentAngle -= 360.0;
+//   }
 
-  if (sizeDirection) {
-    modelScale += (SCALE_INCREMENT * deltaTime);
-  } else {
-    modelScale -= (SCALE_INCREMENT * deltaTime);
-  }
+//   if (sizeDirection) {
+//     modelScale += (SCALE_INCREMENT * deltaTime);
+//   } else {
+//     modelScale -= (SCALE_INCREMENT * deltaTime);
+//   }
 
-  if (modelScale <= MIN_SCALE || modelScale >= MAX_SCALE) {
-    sizeDirection = !sizeDirection;
-  }
+//   if (modelScale <= MIN_SCALE || modelScale >= MAX_SCALE) {
+//     sizeDirection = !sizeDirection;
+//   }
 
-  let modelMatrix: mat4 = mat4.create();
-  mat4.translate(modelMatrix, modelMatrix, [0, -0.5, -2.5]);
-  mat4.rotateY(modelMatrix, modelMatrix, currentAngle * TO_RADIANS);
-  mat4.scale(modelMatrix, modelMatrix, [0.4, 0.4, 1.0]);
+//   let modelMatrix: mat4 = mat4.create();
+//   mat4.translate(modelMatrix, modelMatrix, [0, -0.5, -2.5]);
+//   mat4.rotateY(modelMatrix, modelMatrix, currentAngle * TO_RADIANS);
+//   mat4.scale(modelMatrix, modelMatrix, [0.4, 0.4, 1.0]);
 
-  return modelMatrix;
-}
+//   return modelMatrix;
+// }
 
 function update(time: DOMHighResTimeStamp): void {
   if (!gl) {
@@ -123,6 +125,9 @@ function update(time: DOMHighResTimeStamp): void {
   // Update deltaTime
   const deltaTime = (time - lastFrameTime) / 1000;
   lastFrameTime = time;
+
+  // Poll inputs
+  const relativePointerPos = inputHandler.pollRelativePointerPosition();
 
   // Update logic
   const angleIncrement = ANGLE_INCREMENT * deltaTime;
@@ -134,6 +139,7 @@ function update(time: DOMHighResTimeStamp): void {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+    // Render models
     for (const model of models) {
       model.render(gl, projectionMatrix);
     }
@@ -159,11 +165,11 @@ async function run(): Promise<void> {
   // Create models
   models.push(createPyramidModel(axisShader));
   models[0].setTranslation(0, -0.5, -2.5)
-  models[0].setScale(0.4, 0.4, 0.4)
+  models[0].setScale(0.45, 0.45, 0.45)
 
   models.push(createPyramidModel(axisShader));
   models[1].setTranslation(0, 0.5, -2.5)
-  models[1].setScale(0.4, 0.4, 0.4)
+  models[1].setScale(0.45, 0.45, 0.45)
 
   // Set up depth buffer
   gl.enable(gl.DEPTH_TEST);
