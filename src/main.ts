@@ -5,6 +5,7 @@ import { mat4 } from "gl-matrix";
 import Mesh from "./rendering/mesh";
 import Shader from "./rendering/shader";
 import { downloadTextFile } from "./utils";
+import Model from "./rendering/model";
 
 // -----------
 // -- SETUP --
@@ -31,7 +32,7 @@ run()
 // -- EXECUTION --
 // ---------------
 
-const meshes = new Array<Mesh>();
+const models = new Array<Model>();
 
 const FOV = 45;
 const ASPECT_RATIO = CANVAS_WIDTH / CANVAS_HEIGHT;
@@ -52,15 +53,13 @@ const MIN_SCALE = 0.1;
 const MAX_SCALE = 0.8;
 const SCALE_INCREMENT = 0.1;
 
-const shaderList = new Array<Shader>();
-
 const projectionMatrix = mat4.create();
 
 let lastFrameTime: number = 0;
 
-function createObjects() {
+function createPyramidModel(shader: Shader): Model {
   if (!gl) {
-    return;
+    throw Error("Valid WebGL context required to construct model.");
   }
 
   const indices = [
@@ -77,7 +76,9 @@ function createObjects() {
     0.0, 1.0, 0.0     // 3
   ];
 
-  meshes.push(new Mesh(gl, vertices, indices));
+
+  const mesh = new Mesh(gl, vertices, indices);
+  return new Model(mesh, shader);
 }
 
 function updateTriangleModel(deltaTime: number): mat4 {
@@ -107,7 +108,7 @@ function updateTriangleModel(deltaTime: number): mat4 {
   }
 
   let modelMatrix: mat4 = mat4.create();
-  mat4.translate(modelMatrix, modelMatrix, [0, 0, -2.5]);
+  mat4.translate(modelMatrix, modelMatrix, [0, -0.5, -2.5]);
   mat4.rotateY(modelMatrix, modelMatrix, currentAngle * TO_RADIANS);
   mat4.scale(modelMatrix, modelMatrix, [0.4, 0.4, 1.0]);
 
@@ -124,23 +125,18 @@ function update(time: DOMHighResTimeStamp): void {
   lastFrameTime = time;
 
   // Update logic
-  const triModel = updateTriangleModel(deltaTime);
+  const angleIncrement = ANGLE_INCREMENT * deltaTime;
+  models[0].rotateBy(0, angleIncrement, 0);
+  models[1].rotateBy(0, -angleIncrement, 0);
 
   // Draw
   {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    shaderList[0].use(gl);
-    {
-      gl.uniformMatrix4fv(shaderList[0].getUniformModel(), false, new Float32Array(triModel));
-      gl.uniformMatrix4fv(shaderList[0].getUniformProjection(), false, new Float32Array(projectionMatrix));
-
-      for (const mesh of meshes) {
-        mesh.render();
-      }
+    for (const model of models) {
+      model.render(gl, projectionMatrix);
     }
-    gl.useProgram(null);
   }
 
   window.requestAnimationFrame(update);
@@ -155,13 +151,19 @@ async function run(): Promise<void> {
   const vertexShaderSrc = await downloadTextFile(vertexShaderUrl);
   const fragmentShaderSrc = await downloadTextFile(fragmentShaderUrl);
 
-  shaderList.push(Shader.createFromStrings(gl, vertexShaderSrc, fragmentShaderSrc));
+  const axisShader = Shader.createFromStrings(gl, vertexShaderSrc, fragmentShaderSrc);
 
   // Set up projection matrix
   mat4.perspective(projectionMatrix, FOV, ASPECT_RATIO, 0.1, 100.0);
 
-  // Create triangle
-  createObjects();
+  // Create models
+  models.push(createPyramidModel(axisShader));
+  models[0].setTranslation(0, -0.5, -2.5)
+  models[0].setScale(0.4, 0.4, 0.4)
+
+  models.push(createPyramidModel(axisShader));
+  models[1].setTranslation(0, 0.5, -2.5)
+  models[1].setScale(0.4, 0.4, 0.4)
 
   // Set up depth buffer
   gl.enable(gl.DEPTH_TEST);

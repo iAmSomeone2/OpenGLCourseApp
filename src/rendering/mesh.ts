@@ -49,17 +49,17 @@ export default class Mesh {
     }
 
     public clear(): void {
-        if (this.ibo != 0) {
+        if (this.ibo != null) {
             this.gl.deleteBuffer(this.ibo);
-            this.ibo = 0;
+            this.ibo = null;
         }
-        if (this.vbo != 0) {
+        if (this.vbo != null) {
             this.gl.deleteBuffer(this.vbo);
-            this.vbo = 0;
+            this.vbo = null;
         }
-        if (this.vao != 0) {
+        if (this.vao != null) {
             this.gl.deleteVertexArray(this.vao);
-            this.vao = 0;
+            this.vao = null;
         }
 
         this.indexCount = 0;
