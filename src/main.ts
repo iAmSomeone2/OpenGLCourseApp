@@ -1,9 +1,10 @@
 import "./style.css";
 import vertexShaderUrl from "./shaders/shader.vs.glsl?url";
 import fragmentShaderUrl from "./shaders/shader.fs.glsl?url";
-import { compileShaderProgram, createShader } from './rendering/render-utils';
 import { mat4 } from "gl-matrix";
 import Mesh from "./rendering/mesh";
+import Shader from "./rendering/shader";
+import { downloadTextFile } from "./utils";
 
 // -----------
 // -- SETUP --
@@ -30,7 +31,7 @@ run()
 // -- EXECUTION --
 // ---------------
 
-let meshes = new Array<Mesh>();
+const meshes = new Array<Mesh>();
 
 const FOV = 45;
 const ASPECT_RATIO = CANVAS_WIDTH / CANVAS_HEIGHT;
@@ -43,7 +44,7 @@ const TRI_MAX_OFFSET = 0.7;
 const TRI_INCREMENT = 1.0;
 
 let currentAngle = 0.0;
-const ANGLE_INCREMENT = 40.0;
+const ANGLE_INCREMENT = 80.0;
 
 let sizeDirection = true;
 let modelScale = 0.4;
@@ -51,16 +52,13 @@ const MIN_SCALE = 0.1;
 const MAX_SCALE = 0.8;
 const SCALE_INCREMENT = 0.1;
 
-let shaderProgram: WebGLProgram | null = null;
+const shaderList = new Array<Shader>();
 
-let uniformModel: WebGLUniformLocation | null = null;
-let projectionModel: WebGLUniformLocation | null = null;
-
-let projectionMatrix = mat4.create();
+const projectionMatrix = mat4.create();
 
 let lastFrameTime: number = 0;
 
-function createTriangle() {
+function createObjects() {
   if (!gl) {
     return;
   }
@@ -117,7 +115,7 @@ function updateTriangleModel(deltaTime: number): mat4 {
 }
 
 function update(time: DOMHighResTimeStamp): void {
-  if (!gl || !shaderProgram) {
+  if (!gl) {
     console.error("A required rendering component is 'null'");
     return;
   }
@@ -133,10 +131,10 @@ function update(time: DOMHighResTimeStamp): void {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    gl.useProgram(shaderProgram);
+    shaderList[0].use(gl);
     {
-      gl.uniformMatrix4fv(uniformModel, false, new Float32Array(triModel));
-      gl.uniformMatrix4fv(projectionModel, false, new Float32Array(projectionMatrix));
+      gl.uniformMatrix4fv(shaderList[0].getUniformModel(), false, new Float32Array(triModel));
+      gl.uniformMatrix4fv(shaderList[0].getUniformProjection(), false, new Float32Array(projectionMatrix));
 
       for (const mesh of meshes) {
         mesh.render();
@@ -154,19 +152,16 @@ async function run(): Promise<void> {
   }
 
   // Create shader program
-  const vertexShader = await createShader(gl, gl.VERTEX_SHADER, vertexShaderUrl);
-  const fragmentShader = await createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderUrl);
+  const vertexShaderSrc = await downloadTextFile(vertexShaderUrl);
+  const fragmentShaderSrc = await downloadTextFile(fragmentShaderUrl);
 
-  shaderProgram = compileShaderProgram(gl, [vertexShader, fragmentShader]);
-
-  uniformModel = gl.getUniformLocation(shaderProgram, "model");
-  projectionModel = gl.getUniformLocation(shaderProgram, "projection");
+  shaderList.push(Shader.createFromStrings(gl, vertexShaderSrc, fragmentShaderSrc));
 
   // Set up projection matrix
   mat4.perspective(projectionMatrix, FOV, ASPECT_RATIO, 0.1, 100.0);
 
   // Create triangle
-  createTriangle();
+  createObjects();
 
   // Set up depth buffer
   gl.enable(gl.DEPTH_TEST);
