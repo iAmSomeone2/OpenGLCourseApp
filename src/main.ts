@@ -65,17 +65,21 @@ function createPyramidMesh(): Mesh {
   }
 
   const indices = [
-    0, 3, 1,
-    1, 3, 2,
-    2, 3, 0,
-    0, 1, 2
+    0, 4, 1,
+    1, 4, 2,
+    2, 4, 0,
+    0, 1, 2,
+    2, 3, 4,
+    4, 0, 3,
+    3, 2, 0
   ];
 
   const vertices = [
     -1.0, -1.0, 0.0,  // 0
     0.0, -1.0, 1.0,   // 1 
     1.0, -1.0, 0.0,   // 2
-    0.0, 1.0, 0.0     // 3
+    0.0, -1.0, -1.0,  // 3
+    0.0, 1.0, 0.0     // 4
   ];
 
 
@@ -129,9 +133,9 @@ function update(time: DOMHighResTimeStamp): void {
   const relativePointerPos = inputHandler.pollRelativePointerPosition();
 
   // Update logic
-  const angleIncrement = ANGLE_INCREMENT * deltaTime;
-  models[0].rotateBy(0, angleIncrement, 0);
-  models[1].rotateBy(0, -angleIncrement, 0);
+  const angleIncrement = (ANGLE_INCREMENT * deltaTime)
+  models[0].rotateBy(angleIncrement, 0, 0);
+  models[1].rotateBy(0, angleIncrement, angleIncrement);
 
   // Draw
   {
@@ -171,6 +175,7 @@ async function run(): Promise<void> {
   models.push(new Model(pyramidMesh, axisShader));
   models[1].setTranslation(0, 0.5, -2.5)
   models[1].setScale(0.45, 0.45, 0.45)
+  models[1].setRotation(0, 90, 0);
 
   // Set up depth buffer
   gl.enable(gl.DEPTH_TEST);
