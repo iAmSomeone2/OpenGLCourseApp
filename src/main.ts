@@ -59,7 +59,7 @@ const projectionMatrix = mat4.create();
 
 let lastFrameTime: number = 0;
 
-function createPyramidModel(shader: Shader): Model {
+function createPyramidMesh(): Mesh {
   if (!gl) {
     throw Error("Valid WebGL context required to construct model.");
   }
@@ -79,8 +79,7 @@ function createPyramidModel(shader: Shader): Model {
   ];
 
 
-  const mesh = new Mesh(gl, vertices, indices);
-  return new Model(mesh, shader);
+  return new Mesh(gl, vertices, indices);
 }
 
 // function updateTriangleModel(deltaTime: number): mat4 {
@@ -163,11 +162,13 @@ async function run(): Promise<void> {
   mat4.perspective(projectionMatrix, FOV, ASPECT_RATIO, 0.1, 100.0);
 
   // Create models
-  models.push(createPyramidModel(axisShader));
+  const pyramidMesh = createPyramidMesh();
+
+  models.push(new Model(pyramidMesh, axisShader));
   models[0].setTranslation(0, -0.5, -2.5)
   models[0].setScale(0.45, 0.45, 0.45)
 
-  models.push(createPyramidModel(axisShader));
+  models.push(new Model(pyramidMesh, axisShader));
   models[1].setTranslation(0, 0.5, -2.5)
   models[1].setScale(0.45, 0.45, 0.45)
 

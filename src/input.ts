@@ -8,8 +8,11 @@ export default class InputHandler {
     private lastPolledPointerPosition: PointerPosition;
     private currentPointerPosition: PointerPosition;
 
+    private keyEvents: Array<KeyboardEvent>;
+
     constructor(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
+        this.keyEvents = new Array<KeyboardEvent>();
 
         this.canvas.onpointerdown = (e: PointerEvent) => {
             InputHandler.beginMouseCapture(e, this);
