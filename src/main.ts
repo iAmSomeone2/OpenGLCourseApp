@@ -16,9 +16,16 @@ const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
 
 const CANVAS_ID = "gl-app";
+const PERF_INFO_ID = "perf-info";
+const FPS_INFO_ID = "fps-info";
+const FRAMETIME_INFO_ID = "frametime-info";
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-    <canvas id="${CANVAS_ID}" width="${CANVAS_WIDTH}px" height="${CANVAS_HEIGHT}px"></canvas
+    <div id="${PERF_INFO_ID}">
+      <p id="${FPS_INFO_ID}"></p>
+      <p id="${FRAMETIME_INFO_ID}"></p>
+    </div>
+    <canvas id="${CANVAS_ID}" width="${CANVAS_WIDTH}px" height="${CANVAS_HEIGHT}px"></canvas>
 `;
 
 const canvas = document.getElementById(CANVAS_ID) as HTMLCanvasElement;
@@ -58,6 +65,8 @@ const SCALE_INCREMENT = 0.1;
 const projectionMatrix = mat4.create();
 
 let lastFrameTime: number = 0;
+// const FRAMETIME_CAPTURE_COUNT = 500;
+let frametimes: number[] = new Array<number>();
 
 function createPyramidMesh(): Mesh {
   if (!gl) {
@@ -120,6 +129,37 @@ function createPyramidMesh(): Mesh {
 //   return modelMatrix;
 // }
 
+function updatePerformanceInfo(): void {
+  // Calculate average frametime and FPS
+  let totalFt = 0;
+  for (const ft of frametimes) {
+    totalFt += ft;
+  }
+  const avgFt = totalFt / frametimes.length;
+  const fps = 1 / avgFt;
+
+  frametimes = [];
+
+  const fpsInfo = document.getElementById(FPS_INFO_ID) as HTMLParagraphElement;
+  const frametimeInfo = document.getElementById(FRAMETIME_INFO_ID) as HTMLParagraphElement;
+
+  const fpsFormat = new Intl.NumberFormat("en-US", {
+    style: "decimal",
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+    minimumIntegerDigits: 2,
+  });
+
+  const msFormat = new Intl.NumberFormat("en-US", {
+    style: "unit",
+    unit: "millisecond",
+    unitDisplay: 'short'
+  });
+
+  fpsInfo.innerText = `${fpsFormat.format(fps)} FPS`;
+  frametimeInfo.innerText = `${msFormat.format(avgFt * 1000)}`;
+}
+
 function update(time: DOMHighResTimeStamp): void {
   if (!gl) {
     console.error("A required rendering component is 'null'");
@@ -128,9 +168,11 @@ function update(time: DOMHighResTimeStamp): void {
   // Update deltaTime
   const deltaTime = (time - lastFrameTime) / 1000;
   lastFrameTime = time;
+  frametimes.push(deltaTime);
 
   // Poll inputs
-  const relativePointerPos = inputHandler.pollRelativePointerPosition();
+  const pointerPosDelta = inputHandler.pollPointerPositionDelta();
+  const keyEvents = inputHandler.pollKeyboardEvents();
 
   // Update logic
   const angleIncrement = (ANGLE_INCREMENT * deltaTime)
@@ -181,6 +223,8 @@ async function run(): Promise<void> {
   gl.enable(gl.DEPTH_TEST);
 
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+  setInterval(updatePerformanceInfo, 2000);
 
   // Start update loop
   window.requestAnimationFrame(update);

@@ -15,10 +15,10 @@ export default class InputHandler {
         this.keyEvents = new Array<KeyboardEvent>();
 
         this.canvas.onpointerdown = (e: PointerEvent) => {
-            InputHandler.beginMouseCapture(e, this);
+            InputHandler.beginInpuCapture(e, this);
         }
         this.canvas.onpointerup = (e: PointerEvent) => {
-            InputHandler.endMouseCapture(e, this);
+            InputHandler.endInputCapture(e, this);
         }
 
         this.lastPolledPointerPosition = {
@@ -27,15 +27,24 @@ export default class InputHandler {
         };
         this.currentPointerPosition = this.lastPolledPointerPosition;
     }
-    private static beginMouseCapture(e: PointerEvent, inputHandler: InputHandler): void {
+
+    private static beginInpuCapture(e: PointerEvent, inputHandler: InputHandler): void {
         inputHandler.canvas.onpointermove = (e: PointerEvent) => {
             InputHandler.handleMouseMovement(e, inputHandler);
         }
+        document.onkeydown = (e: KeyboardEvent) => {
+            InputHandler.handleKeypress(e, inputHandler);
+        };
+        document.onkeyup = (e: KeyboardEvent) => {
+            InputHandler.handleKeypress(e, inputHandler);
+        };
         inputHandler.canvas.setPointerCapture(e.pointerId);
     }
 
-    private static endMouseCapture(e: PointerEvent, inputHandler: InputHandler): void {
+    private static endInputCapture(e: PointerEvent, inputHandler: InputHandler): void {
         inputHandler.canvas.onpointermove = null;
+        document.onkeydown = null;
+        document.onkeyup = null;
         inputHandler.canvas.releasePointerCapture(e.pointerId);
     }
 
@@ -46,10 +55,14 @@ export default class InputHandler {
         };
     }
 
+    private static handleKeypress(e: KeyboardEvent, inputHandler: InputHandler): void {
+        inputHandler.keyEvents.push(e);
+    }
+
     /**
      * Returns the position of the pointer relative to the last poll
      */
-    public pollRelativePointerPosition(): PointerPosition {
+    public pollPointerPositionDelta(): PointerPosition {
         const relativePosition = {
             x: this.currentPointerPosition.x - this.lastPolledPointerPosition.x,
             y: this.currentPointerPosition.y - this.lastPolledPointerPosition.y,
@@ -58,5 +71,19 @@ export default class InputHandler {
         this.lastPolledPointerPosition = this.currentPointerPosition;
 
         return relativePosition;
+    }
+
+    /**
+     * Returns the array of keyboard events that occurred since the last poll
+     */
+    public pollKeyboardEvents(): KeyboardEvent[] {
+        const keyEventsCopy = new Array<KeyboardEvent>(this.keyEvents.length);
+        for (let i = 0; i < this.keyEvents.length; i++) {
+            keyEventsCopy[i] = this.keyEvents[i];
+        }
+
+        this.keyEvents = [];
+
+        return keyEventsCopy;
     }
 }

@@ -44,6 +44,11 @@ h1 {
   text-align: center;
 }
 
+#perf-info {
+  text-align: start;
+  color: white;
+}
+
 .logo {
   height: 6em;
   padding: 1.5em;
