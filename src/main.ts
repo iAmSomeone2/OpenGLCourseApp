@@ -13,8 +13,8 @@ import Camera from "./rendering/camera";
 // -- SETUP --
 // -----------
 
-const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 600;
+const CANVAS_WIDTH = 1000;
+const CANVAS_HEIGHT = 800;
 
 const CANVAS_ID = "gl-app";
 const PERF_INFO_ID = "perf-info";
@@ -181,9 +181,9 @@ function update(time: DOMHighResTimeStamp): void {
   camera.mouseControl(pointerPosDelta, deltaTime);
   camera.keyControl(keyEvents, deltaTime);
 
-  // const angleIncrement = (ANGLE_INCREMENT * deltaTime)
-  // models[0].rotateBy(angleIncrement, 0, 0);
-  // models[1].rotateBy(0, angleIncrement, 0);
+  const angleIncrement = (ANGLE_INCREMENT * deltaTime)
+  models[0].rotateBy(0, angleIncrement, 0);
+  models[1].rotateBy(0, angleIncrement, 0);
 
   // Draw
   {
@@ -220,13 +220,14 @@ async function run(): Promise<void> {
   const pyramidMesh = createPyramidMesh();
 
   models.push(new Model(pyramidMesh, axisShader));
-  models[0].setTranslation(0, -0.5, 0)
-  models[0].setScale(0.45, 0.45, 0.45)
+  models[0].setTranslation(0, -0.5, 0);
+  models[0].setScale(0.45, 0.45, 0.45);
+  models[0].setRotation(180, 0, 0);
 
   models.push(new Model(pyramidMesh, axisShader));
-  models[1].setTranslation(0, 0.5, 0)
-  models[1].setScale(0.45, 0.45, 0.45)
-  models[1].setRotation(0, 90, 0);
+  models[1].setTranslation(0, 0.5, 0);
+  models[1].setScale(0.45, 0.45, 0.45);
+
 
   // Set up depth buffer
   gl.enable(gl.DEPTH_TEST);

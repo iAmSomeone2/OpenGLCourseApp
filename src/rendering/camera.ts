@@ -90,6 +90,13 @@ export default class Camera {
         this.yaw += xChange;
         this.pitch += yChange;
 
+        if (this.pitch > 89.0) {
+            this.pitch = 89.0
+        }
+        if (this.pitch < -89.0) {
+            this.pitch = -89.0
+        }
+
         this.update();
     }
 
