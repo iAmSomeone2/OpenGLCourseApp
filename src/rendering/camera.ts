@@ -1,4 +1,5 @@
 import { glMatrix, mat4, vec3 } from "gl-matrix";
+import { PointerPosition } from "../input";
 
 export default class Camera {
     private position: vec3;
@@ -13,7 +14,7 @@ export default class Camera {
     private movementSpeed: number;
     private turnSpeed: number;
 
-    constructor(initalPosition: vec3 = [0, 0, 0], initalUp: vec3 = [0, 1, 0], initalYaw: number = -90, initalPitch: number = 0, initialMoveSpeed: number = 5, initialTurnSpeed: number = 1) {
+    constructor(initalPosition: vec3 = [0, 0, 0], initalUp: vec3 = [0, 1, 0], initalYaw: number = -90, initalPitch: number = 0, initialMoveSpeed: number = 5, initialTurnSpeed: number = 100) {
         this.position = initalPosition;
         this.up = vec3.create();
         this.yaw = initalYaw;
@@ -79,6 +80,15 @@ export default class Camera {
                 // console.log(`Moving camera right by ${movementStep}...`);
             }
         }
+    }
+
+    public mouseControl(mouseChange: PointerPosition, deltaTime: number): void {
+        const turnAmt = this.turnSpeed * deltaTime;
+        const xChange = mouseChange.x * turnAmt;
+        const yChange = mouseChange.y * turnAmt;
+
+        this.yaw += xChange;
+        this.pitch += yChange;
 
         this.update();
     }

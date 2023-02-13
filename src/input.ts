@@ -56,8 +56,8 @@ export default class InputHandler {
         //     y: e.clientY
         // };
         inputHandler.lastMovement = {
-            x: e.movementX,
-            y: e.movementY
+            x: inputHandler.lastMovement.x + e.movementX,
+            y: inputHandler.lastMovement.y + e.movementY
         };
     }
 
@@ -71,7 +71,7 @@ export default class InputHandler {
     public pollPointerPositionDelta(): PointerPosition {
         const relativePosition = {
             x: this.lastMovement.x - this.lastPolledPointerPosition.x,
-            y: this.lastMovement.y - this.lastPolledPointerPosition.y,
+            y: this.lastPolledPointerPosition.y - this.lastMovement.y,
         }
 
         this.lastPolledPointerPosition = this.lastMovement;

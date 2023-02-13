@@ -178,6 +178,7 @@ function update(time: DOMHighResTimeStamp): void {
   const keyEvents = inputHandler.pollKeyboardEvents();
 
   // Update logic
+  camera.mouseControl(pointerPosDelta, deltaTime);
   camera.keyControl(keyEvents, deltaTime);
 
   // const angleIncrement = (ANGLE_INCREMENT * deltaTime)
