@@ -6,7 +6,7 @@ export interface PointerPosition {
 export default class InputHandler {
     private canvas: HTMLCanvasElement;
     private lastPolledPointerPosition: PointerPosition;
-    private currentPointerPosition: PointerPosition;
+    private lastMovement: PointerPosition;
 
     private keyEvents: Array<KeyboardEvent>;
 
@@ -25,7 +25,7 @@ export default class InputHandler {
             x: 0,
             y: 0
         };
-        this.currentPointerPosition = this.lastPolledPointerPosition;
+        this.lastMovement = this.lastPolledPointerPosition;
     }
 
     private static beginInpuCapture(e: PointerEvent, inputHandler: InputHandler): void {
@@ -38,20 +38,26 @@ export default class InputHandler {
         document.onkeyup = (e: KeyboardEvent) => {
             InputHandler.handleKeypress(e, inputHandler);
         };
-        inputHandler.canvas.setPointerCapture(e.pointerId);
+        // inputHandler.canvas.setPointerCapture(e.pointerId);
+        inputHandler.canvas.requestPointerLock();
     }
 
     private static endInputCapture(e: PointerEvent, inputHandler: InputHandler): void {
         inputHandler.canvas.onpointermove = null;
         document.onkeydown = null;
         document.onkeyup = null;
-        inputHandler.canvas.releasePointerCapture(e.pointerId);
+        // inputHandler.canvas.releasePointerCapture(e.pointerId);
+        document.exitPointerLock();
     }
 
     private static handleMouseMovement(e: PointerEvent, inputHandler: InputHandler): void {
-        inputHandler.currentPointerPosition = {
-            x: e.clientX,
-            y: e.clientY
+        // inputHandler.currentPointerPosition = {
+        //     x: e.clientX,
+        //     y: e.clientY
+        // };
+        inputHandler.lastMovement = {
+            x: e.movementX,
+            y: e.movementY
         };
     }
 
@@ -64,11 +70,11 @@ export default class InputHandler {
      */
     public pollPointerPositionDelta(): PointerPosition {
         const relativePosition = {
-            x: this.currentPointerPosition.x - this.lastPolledPointerPosition.x,
-            y: this.currentPointerPosition.y - this.lastPolledPointerPosition.y,
+            x: this.lastMovement.x - this.lastPolledPointerPosition.x,
+            y: this.lastMovement.y - this.lastPolledPointerPosition.y,
         }
 
-        this.lastPolledPointerPosition = this.currentPointerPosition;
+        this.lastPolledPointerPosition = this.lastMovement;
 
         return relativePosition;
     }

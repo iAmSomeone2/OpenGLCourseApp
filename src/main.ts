@@ -7,6 +7,7 @@ import Shader from "./rendering/shader";
 import { downloadTextFile } from "./utils";
 import Model from "./rendering/model";
 import InputHandler from "./input";
+import Camera from "./rendering/camera";
 
 // -----------
 // -- SETUP --
@@ -22,8 +23,8 @@ const FRAMETIME_INFO_ID = "frametime-info";
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     <div id="${PERF_INFO_ID}">
-      <p id="${FPS_INFO_ID}"></p>
-      <p id="${FRAMETIME_INFO_ID}"></p>
+      <p id="${FPS_INFO_ID}">00.00 FPS</p>
+      <p id="${FRAMETIME_INFO_ID}">0.000 ms</p>
     </div>
     <canvas id="${CANVAS_ID}" width="${CANVAS_WIDTH}px" height="${CANVAS_HEIGHT}px"></canvas>
 `;
@@ -67,6 +68,8 @@ const projectionMatrix = mat4.create();
 let lastFrameTime: number = 0;
 // const FRAMETIME_CAPTURE_COUNT = 500;
 let frametimes: number[] = new Array<number>();
+
+let camera: Camera | null = null;
 
 function createPyramidMesh(): Mesh {
   if (!gl) {
@@ -161,7 +164,7 @@ function updatePerformanceInfo(): void {
 }
 
 function update(time: DOMHighResTimeStamp): void {
-  if (!gl) {
+  if (!gl || !camera) {
     console.error("A required rendering component is 'null'");
     return;
   }
@@ -175,18 +178,21 @@ function update(time: DOMHighResTimeStamp): void {
   const keyEvents = inputHandler.pollKeyboardEvents();
 
   // Update logic
-  const angleIncrement = (ANGLE_INCREMENT * deltaTime)
-  models[0].rotateBy(angleIncrement, 0, 0);
-  models[1].rotateBy(0, angleIncrement, angleIncrement);
+  camera.keyControl(keyEvents, deltaTime);
+
+  // const angleIncrement = (ANGLE_INCREMENT * deltaTime)
+  // models[0].rotateBy(angleIncrement, 0, 0);
+  // models[1].rotateBy(0, angleIncrement, 0);
 
   // Draw
   {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+    const viewMatrix = camera.getViewMatrix();
     // Render models
     for (const model of models) {
-      model.render(gl, projectionMatrix);
+      model.render(gl, projectionMatrix, viewMatrix);
     }
   }
 
@@ -204,6 +210,8 @@ async function run(): Promise<void> {
 
   const axisShader = Shader.createFromStrings(gl, vertexShaderSrc, fragmentShaderSrc);
 
+  camera = new Camera([0, 0, 2.5]);
+
   // Set up projection matrix
   mat4.perspective(projectionMatrix, FOV, ASPECT_RATIO, 0.1, 100.0);
 
@@ -211,11 +219,11 @@ async function run(): Promise<void> {
   const pyramidMesh = createPyramidMesh();
 
   models.push(new Model(pyramidMesh, axisShader));
-  models[0].setTranslation(0, -0.5, -2.5)
+  models[0].setTranslation(0, -0.5, 0)
   models[0].setScale(0.45, 0.45, 0.45)
 
   models.push(new Model(pyramidMesh, axisShader));
-  models[1].setTranslation(0, 0.5, -2.5)
+  models[1].setTranslation(0, 0.5, 0)
   models[1].setScale(0.45, 0.45, 0.45)
   models[1].setRotation(0, 90, 0);
 
@@ -224,7 +232,7 @@ async function run(): Promise<void> {
 
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-  setInterval(updatePerformanceInfo, 2000);
+  setInterval(updatePerformanceInfo, 500);
 
   // Start update loop
   window.requestAnimationFrame(update);
