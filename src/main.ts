@@ -166,7 +166,7 @@ function update(time: DOMHighResTimeStamp): void {
     const viewMatrix = camera.getViewMatrix();
     // Render models
     for (const model of models) {
-      model.render(gl, projectionMatrix, viewMatrix);
+      model.render(projectionMatrix, viewMatrix);
     }
   }
 
@@ -179,16 +179,8 @@ async function run(): Promise<void> {
   }
 
   // Load textures
-  Texture.createFromUrl(gl, woodTexture1Url)
-    .then((texture) => woodTexture1 = texture)
-    .catch((error) => {
-      console.error(error);
-    });
-  Texture.createFromUrl(gl, woodTexture2Url)
-    .then((texture) => woodTexture2 = texture)
-    .catch((error) => {
-      console.error(error);
-    });
+  const texPromise0 = Texture.createFromUrl(gl, woodTexture1Url);
+  const texPromise1 = Texture.createFromUrl(gl, woodTexture2Url);
 
   // Create shader program
   const vertexShaderSrc = await downloadTextFile(vertexShaderUrl);
@@ -204,14 +196,25 @@ async function run(): Promise<void> {
   // Create models
   const pyramidMesh = createPyramidMesh();
 
-  models.push(new Model(pyramidMesh, axisShader, woodTexture1!));
+  models.push(new Model(gl, pyramidMesh, axisShader));
   models[0].setTranslation(0, -0.5, 0);
   models[0].setScale(0.45, 0.45, 0.45);
   models[0].setRotation(180, 0, 0);
 
-  models.push(new Model(pyramidMesh, axisShader, woodTexture2!));
+  texPromise0
+    .then((texture) => models[0].setAlbedo(texture))
+    .catch((reason) => {
+      console.error(reason);
+    });
+
+  models.push(new Model(gl, pyramidMesh, axisShader));
   models[1].setTranslation(0, 0.5, 0);
   models[1].setScale(0.45, 0.45, 0.45);
+  texPromise1
+    .then((texture) => models[1].setAlbedo(texture))
+    .catch((reason) => {
+      console.error(reason);
+    });
 
 
   // Set up depth buffer
