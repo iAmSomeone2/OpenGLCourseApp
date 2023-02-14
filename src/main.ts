@@ -1,6 +1,9 @@
 import "./style.css";
 import vertexShaderUrl from "./shaders/shader.vs.glsl?url";
 import fragmentShaderUrl from "./shaders/shader.fs.glsl?url";
+import woodTexture1Url from "../public/textures/wood1.jpg?url";
+import woodTexture2Url from "../public/textures/wood2.jpg?url";
+
 import { mat4 } from "gl-matrix";
 import Mesh from "./rendering/mesh";
 import Shader from "./rendering/shader";
@@ -8,6 +11,7 @@ import { downloadTextFile } from "./utils";
 import Model from "./rendering/model";
 import InputHandler from "./input";
 import Camera from "./rendering/camera";
+import Texture from "./rendering/texture";
 
 // -----------
 // -- SETUP --
@@ -70,6 +74,8 @@ let lastFrameTime: number = 0;
 let frametimes: number[] = new Array<number>();
 
 let camera: Camera | null = null;
+let woodTexture1: Texture | null = null;
+let woodTexture2: Texture | null = null;
 
 function createPyramidMesh(): Mesh {
   if (!gl) {
@@ -87,50 +93,17 @@ function createPyramidMesh(): Mesh {
   ];
 
   const vertices = [
-    -1.0, -1.0, 0.0,  // 0
-    0.0, -1.0, 1.0,   // 1 
-    1.0, -1.0, 0.0,   // 2
-    0.0, -1.0, -1.0,  // 3
-    0.0, 1.0, 0.0     // 4
+    // X     Y     Z    U    V
+    -1.0, -1.0, 0.0, 0.0, 0.0,  // 0
+    0.0, -1.0, 1.0, 1.0, 0.0,   // 1 
+    1.0, -1.0, 0.0, 0.0, 0.0,   // 2
+    0.0, -1.0, -1.0, 1.0, 0.0,  // 3
+    0.0, 1.0, 0.0, 0.5, 1.0     // 4
   ];
 
 
   return new Mesh(gl, vertices, indices);
 }
-
-// function updateTriangleModel(deltaTime: number): mat4 {
-//   if (direction) {
-//     triOffset += (TRI_INCREMENT * deltaTime);
-//   } else {
-//     triOffset -= (TRI_INCREMENT * deltaTime);
-//   }
-
-//   if (Math.abs(triOffset) >= TRI_MAX_OFFSET) {
-//     direction = !direction;
-//   }
-
-//   currentAngle += ANGLE_INCREMENT * deltaTime;
-//   if (currentAngle >= 360.0) {
-//     currentAngle -= 360.0;
-//   }
-
-//   if (sizeDirection) {
-//     modelScale += (SCALE_INCREMENT * deltaTime);
-//   } else {
-//     modelScale -= (SCALE_INCREMENT * deltaTime);
-//   }
-
-//   if (modelScale <= MIN_SCALE || modelScale >= MAX_SCALE) {
-//     sizeDirection = !sizeDirection;
-//   }
-
-//   let modelMatrix: mat4 = mat4.create();
-//   mat4.translate(modelMatrix, modelMatrix, [0, -0.5, -2.5]);
-//   mat4.rotateY(modelMatrix, modelMatrix, currentAngle * TO_RADIANS);
-//   mat4.scale(modelMatrix, modelMatrix, [0.4, 0.4, 1.0]);
-
-//   return modelMatrix;
-// }
 
 function updatePerformanceInfo(): void {
   // Calculate average frametime and FPS
@@ -205,6 +178,18 @@ async function run(): Promise<void> {
     return Promise.reject("A browser with support for WebGL2 is required.");
   }
 
+  // Load textures
+  Texture.createFromUrl(gl, woodTexture1Url)
+    .then((texture) => woodTexture1 = texture)
+    .catch((error) => {
+      console.error(error);
+    });
+  Texture.createFromUrl(gl, woodTexture2Url)
+    .then((texture) => woodTexture2 = texture)
+    .catch((error) => {
+      console.error(error);
+    });
+
   // Create shader program
   const vertexShaderSrc = await downloadTextFile(vertexShaderUrl);
   const fragmentShaderSrc = await downloadTextFile(fragmentShaderUrl);
@@ -219,12 +204,12 @@ async function run(): Promise<void> {
   // Create models
   const pyramidMesh = createPyramidMesh();
 
-  models.push(new Model(pyramidMesh, axisShader));
+  models.push(new Model(pyramidMesh, axisShader, woodTexture1!));
   models[0].setTranslation(0, -0.5, 0);
   models[0].setScale(0.45, 0.45, 0.45);
   models[0].setRotation(180, 0, 0);
 
-  models.push(new Model(pyramidMesh, axisShader));
+  models.push(new Model(pyramidMesh, axisShader, woodTexture2!));
   models[1].setTranslation(0, 0.5, 0);
   models[1].setScale(0.45, 0.45, 0.45);
 

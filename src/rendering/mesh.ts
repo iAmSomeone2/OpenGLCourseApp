@@ -1,3 +1,5 @@
+import { GL_FLOAT_SIZE } from "../utils";
+
 export default class Mesh {
     private gl: WebGL2RenderingContext;
 
@@ -26,9 +28,11 @@ export default class Mesh {
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbo);
             {
                 this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.STATIC_DRAW);
+                // Vertices
+                this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, false, 5 * GL_FLOAT_SIZE, 0);
+                // Texture coords
+                this.gl.vertexAttribPointer(1, 2, this.gl.FLOAT, false, 5 * GL_FLOAT_SIZE, 3 * GL_FLOAT_SIZE);
 
-                this.gl.enableVertexAttribArray(0);
-                this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, false, 0, 0);
             }
             this.gl.bindBuffer(this.gl.ARRAY_BUFFER, null);
         }
@@ -42,6 +46,8 @@ export default class Mesh {
         this.gl.bindVertexArray(this.vao);
         {
             this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.ibo);
+            this.gl.enableVertexAttribArray(0);
+            this.gl.enableVertexAttribArray(1);
             this.gl.drawElements(this.gl.TRIANGLES, this.indexCount, this.gl.UNSIGNED_INT, 0);
             this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, null);
         }
