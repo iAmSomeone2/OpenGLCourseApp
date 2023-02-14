@@ -2,11 +2,13 @@ export default class Shader {
     private glShader: WebGLProgram;
     private uniformProjection: WebGLUniformLocation;
     private uniformModel: WebGLUniformLocation;
+    private uniformView: WebGLUniformLocation;
 
-    protected constructor(program: WebGLProgram, projectionLoc: WebGLUniformLocation, modelLoc: WebGLUniformLocation) {
+    protected constructor(program: WebGLProgram, projectionLoc: WebGLUniformLocation, modelLoc: WebGLUniformLocation, viewLoc: WebGLUniformLocation) {
         this.glShader = program;
         this.uniformProjection = projectionLoc;
         this.uniformModel = modelLoc;
+        this.uniformView = viewLoc;
     }
 
     public static createFromStrings(gl: WebGL2RenderingContext, vertexSrc: string, fragmentSrc: string): Shader {
@@ -22,8 +24,12 @@ export default class Shader {
         if (!projectionModel) {
             throw Error("Failed to get uniform location for 'projection'");
         }
+        const viewModel = gl.getUniformLocation(shaderProgram, "view");
+        if (!viewModel) {
+            throw Error("Failed to get uniform location for 'view'");
+        }
 
-        return new Shader(shaderProgram, projectionModel, uniformModel);
+        return new Shader(shaderProgram, projectionModel, uniformModel, viewModel);
     }
 
     private static compileShader(gl: WebGL2RenderingContext, src: string, type: number): WebGLShader {
@@ -72,6 +78,10 @@ export default class Shader {
 
     public getUniformModel(): WebGLUniformLocation {
         return this.uniformModel;
+    }
+
+    public getViewModel(): WebGLUniformLocation {
+        return this.uniformView;
     }
 
     public use(gl: WebGL2RenderingContext): void {
