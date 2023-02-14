@@ -52,20 +52,8 @@ const models = new Array<Model>();
 
 const FOV = 45;
 const ASPECT_RATIO = CANVAS_WIDTH / CANVAS_HEIGHT;
-const TO_RADIANS = Math.PI / 180;
-
-// Triangle state
-let direction = true;
-const TRI_MAX_OFFSET = 0.7;
-const TRI_INCREMENT = 1.0;
 
 const ANGLE_INCREMENT = 80.0;
-
-let sizeDirection = true;
-let modelScale = 0.4;
-const MIN_SCALE = 0.1;
-const MAX_SCALE = 0.8;
-const SCALE_INCREMENT = 0.1;
 
 const projectionMatrix = mat4.create();
 
@@ -74,8 +62,6 @@ let lastFrameTime: number = 0;
 let frametimes: number[] = new Array<number>();
 
 let camera: Camera | null = null;
-let woodTexture1: Texture | null = null;
-let woodTexture2: Texture | null = null;
 
 function createPyramidMesh(): Mesh {
   if (!gl) {
@@ -188,7 +174,7 @@ async function run(): Promise<void> {
 
   const axisShader = Shader.createFromStrings(gl, vertexShaderSrc, fragmentShaderSrc);
 
-  camera = new Camera([0, 0, 2.5]);
+  camera = new Camera();
 
   // Set up projection matrix
   mat4.perspective(projectionMatrix, FOV, ASPECT_RATIO, 0.1, 100.0);
@@ -197,10 +183,9 @@ async function run(): Promise<void> {
   const pyramidMesh = createPyramidMesh();
 
   models.push(new Model(gl, pyramidMesh, axisShader));
-  models[0].setTranslation(0, -0.5, 0);
+  models[0].setTranslation(0, -0.5, -2.5);
   models[0].setScale(0.45, 0.45, 0.45);
   models[0].setRotation(180, 0, 0);
-
   texPromise0
     .then((texture) => models[0].setAlbedo(texture))
     .catch((reason) => {
@@ -208,7 +193,7 @@ async function run(): Promise<void> {
     });
 
   models.push(new Model(gl, pyramidMesh, axisShader));
-  models[1].setTranslation(0, 0.5, 0);
+  models[1].setTranslation(0, 0.5, -2.5);
   models[1].setScale(0.45, 0.45, 0.45);
   texPromise1
     .then((texture) => models[1].setAlbedo(texture))
