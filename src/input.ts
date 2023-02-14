@@ -51,10 +51,6 @@ export default class InputHandler {
     }
 
     private static handleMouseMovement(e: PointerEvent, inputHandler: InputHandler): void {
-        // inputHandler.currentPointerPosition = {
-        //     x: e.clientX,
-        //     y: e.clientY
-        // };
         inputHandler.lastMovement = {
             x: inputHandler.lastMovement.x + e.movementX,
             y: inputHandler.lastMovement.y + e.movementY
