@@ -12,6 +12,7 @@ import Model from "./rendering/model";
 import InputHandler from "./input";
 import Camera from "./rendering/camera";
 import Texture from "./rendering/texture";
+import Light from "./rendering/light";
 
 // -----------
 // -- SETUP --
@@ -49,6 +50,7 @@ run()
 // ---------------
 
 const models = new Array<Model>();
+const lights = new Array<Light>();
 
 const FOV = 45;
 const ASPECT_RATIO = CANVAS_WIDTH / CANVAS_HEIGHT;
@@ -58,7 +60,6 @@ const ANGLE_INCREMENT = 80.0;
 const projectionMatrix = mat4.create();
 
 let lastFrameTime: number = 0;
-// const FRAMETIME_CAPTURE_COUNT = 500;
 let frametimes: number[] = new Array<number>();
 
 let camera: Camera | null = null;
@@ -152,7 +153,7 @@ function update(time: DOMHighResTimeStamp): void {
     const viewMatrix = camera.getViewMatrix();
     // Render models
     for (const model of models) {
-      model.render(projectionMatrix, viewMatrix);
+      model.render(projectionMatrix, viewMatrix, lights);
     }
   }
 
@@ -186,21 +187,23 @@ async function run(): Promise<void> {
   models[0].setTranslation(0, -0.5, -2.5);
   models[0].setScale(0.45, 0.45, 0.45);
   models[0].setRotation(180, 0, 0);
-  texPromise0
-    .then((texture) => models[0].setAlbedo(texture))
-    .catch((reason) => {
-      console.error(reason);
-    });
+  try {
+    models[0].setAlbedo(await texPromise0);
+  } catch (reason) {
+    console.error(reason);
+  }
 
   models.push(new Model(gl, pyramidMesh, axisShader));
   models[1].setTranslation(0, 0.5, -2.5);
   models[1].setScale(0.45, 0.45, 0.45);
-  texPromise1
-    .then((texture) => models[1].setAlbedo(texture))
-    .catch((reason) => {
-      console.error(reason);
-    });
+  try {
+    models[1].setAlbedo(await texPromise1);
+  } catch (reason) {
+    console.error(reason);
+  }
 
+
+  lights.push(new Light(gl, 1, 1, 1, 0.5));
 
   // Set up depth buffer
   gl.enable(gl.DEPTH_TEST);

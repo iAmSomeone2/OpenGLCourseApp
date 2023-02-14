@@ -3,12 +3,16 @@ export default class Shader {
     private uniformProjection: WebGLUniformLocation;
     private uniformModel: WebGLUniformLocation;
     private uniformView: WebGLUniformLocation;
+    private uniformAmbientIntensity: WebGLUniformLocation;
+    private uniformAmbientColor: WebGLUniformLocation;
 
-    protected constructor(program: WebGLProgram, projectionLoc: WebGLUniformLocation, modelLoc: WebGLUniformLocation, viewLoc: WebGLUniformLocation) {
+    protected constructor(program: WebGLProgram, projectionLoc: WebGLUniformLocation, modelLoc: WebGLUniformLocation, viewLoc: WebGLUniformLocation, intensityLoc: WebGLUniformLocation, colorLoc: WebGLUniformLocation) {
         this.glShader = program;
         this.uniformProjection = projectionLoc;
         this.uniformModel = modelLoc;
         this.uniformView = viewLoc;
+        this.uniformAmbientIntensity = intensityLoc;
+        this.uniformAmbientColor = colorLoc;
     }
 
     public static createFromStrings(gl: WebGL2RenderingContext, vertexSrc: string, fragmentSrc: string): Shader {
@@ -28,8 +32,16 @@ export default class Shader {
         if (!viewModel) {
             throw Error("Failed to get uniform location for 'view'");
         }
+        const intensity = gl.getUniformLocation(shaderProgram, "directionalLight.intensity");
+        if (!intensity) {
+            throw Error("Failed to get uniform location for 'directionalLight.intensity'");
+        }
+        const color = gl.getUniformLocation(shaderProgram, "directionalLight.color");
+        if (!color) {
+            throw Error("Failed to get uniform location for 'directionalLight.color'");
+        }
 
-        return new Shader(shaderProgram, projectionModel, uniformModel, viewModel);
+        return new Shader(shaderProgram, projectionModel, uniformModel, viewModel, intensity, color);
     }
 
     private static compileShader(gl: WebGL2RenderingContext, src: string, type: number): WebGLShader {
@@ -82,6 +94,14 @@ export default class Shader {
 
     public getViewModel(): WebGLUniformLocation {
         return this.uniformView;
+    }
+
+    public getAmbientIntensityLoc(): WebGLUniformLocation {
+        return this.uniformAmbientIntensity;
+    }
+
+    public getAmbientColorLoc(): WebGLUniformLocation {
+        return this.uniformAmbientColor;
     }
 
     public use(gl: WebGL2RenderingContext): void {

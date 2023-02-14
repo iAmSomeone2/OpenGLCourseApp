@@ -1,4 +1,5 @@
 import { mat4 } from "gl-matrix";
+import Light from "./light";
 import Mesh from "./mesh";
 import RenderNode from "./render-node";
 import Shader from "./shader";
@@ -22,12 +23,16 @@ export default class Model extends RenderNode {
         this.albedoTexture = texture;
     }
 
-    public render(projectionMatrix: mat4, viewMatrix: mat4) {
+    public render(projectionMatrix: mat4, viewMatrix: mat4, lights: Light[] = []) {
         this.shader.use(this.gl);
         {
             this.gl.uniformMatrix4fv(this.shader.getUniformModel(), false, new Float32Array(this.modelMatrix()));
             this.gl.uniformMatrix4fv(this.shader.getUniformProjection(), false, new Float32Array(projectionMatrix));
             this.gl.uniformMatrix4fv(this.shader.getViewModel(), false, new Float32Array(viewMatrix));
+
+            for (const light of lights) {
+                light.use(this.shader.getAmbientIntensityLoc(), this.shader.getAmbientColorLoc());
+            }
 
             this.albedoTexture.useTexture();
             this.mesh.render();

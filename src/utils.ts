@@ -27,3 +27,13 @@ export async function downloadBinaryFile(fileUrl: URL | string): Promise<ArrayBu
 
     return fileBuffer;
 }
+
+export function clamp(value: number, min: number, max: number): number {
+    if (value > max) {
+        return max;
+    } else if (value < min) {
+        return min
+    } else {
+        return value;
+    }
+}
