@@ -44,6 +44,11 @@ h1 {
   text-align: center;
 }
 
+#light-control {
+  text-align: start;
+  margin: 0 auto;
+}
+
 #perf-info {
   text-align: start;
   color: white;

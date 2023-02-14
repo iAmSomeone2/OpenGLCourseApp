@@ -26,13 +26,37 @@ const PERF_INFO_ID = "perf-info";
 const FPS_INFO_ID = "fps-info";
 const FRAMETIME_INFO_ID = "frametime-info";
 
+const RED_INPUT_ID = "red-input";
+const GREEN_INPUT_ID = "green-input";
+const BLUE_INPUT_ID = "blue-input";
+
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     <div id="${PERF_INFO_ID}">
       <p id="${FPS_INFO_ID}">00.00 FPS</p>
       <p id="${FRAMETIME_INFO_ID}">0.000 ms</p>
     </div>
     <canvas id="${CANVAS_ID}" width="${CANVAS_WIDTH}px" height="${CANVAS_HEIGHT}px"></canvas>
+    <div id="light-control">
+      <h3>Ambient Light</h3>
+      <label for="${RED_INPUT_ID}">Red:
+        <input id="${RED_INPUT_ID}" type="range" name="${RED_INPUT_ID}" min="0" max="1" value="1" step="0.05">
+      </label>
+      <label for="${GREEN_INPUT_ID}">Green:
+        <input id="${GREEN_INPUT_ID}" type="range" name="${GREEN_INPUT_ID}" min="0" max="1" value="1" step="0.05">
+      </label>
+      <label for="${BLUE_INPUT_ID}">Blue:
+        <input id="${BLUE_INPUT_ID}" type="range" name="${BLUE_INPUT_ID}" min="0" max="1" value="1" step="0.05">
+      </label>
+    </div>
 `;
+
+const redInput = document.getElementById(RED_INPUT_ID) as HTMLInputElement;
+const greenInput = document.getElementById(GREEN_INPUT_ID) as HTMLInputElement;
+const blueInput = document.getElementById(BLUE_INPUT_ID) as HTMLInputElement;
+
+redInput.oninput = updateAmbientLight;
+greenInput.oninput = updateAmbientLight;
+blueInput.oninput = updateAmbientLight;
 
 const canvas = document.getElementById(CANVAS_ID) as HTMLCanvasElement;
 
@@ -90,6 +114,14 @@ function createPyramidMesh(): Mesh {
 
 
   return new Mesh(gl, vertices, indices);
+}
+
+function updateAmbientLight(): void {
+  const red = redInput.valueAsNumber;
+  const green = greenInput.valueAsNumber;
+  const blue = blueInput.valueAsNumber;
+
+  lights[0].setColor(red, green, blue);
 }
 
 function updatePerformanceInfo(): void {
@@ -202,8 +234,9 @@ async function run(): Promise<void> {
     console.error(reason);
   }
 
+  const ambientLight = new Light(gl);
 
-  lights.push(new Light(gl, 1, 1, 1, 0.5));
+  lights.push(ambientLight);
 
   // Set up depth buffer
   gl.enable(gl.DEPTH_TEST);
