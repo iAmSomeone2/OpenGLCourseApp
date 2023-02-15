@@ -7,12 +7,12 @@ import woodTexture2Url from "../public/textures/wood2.jpg?url";
 import { mat4 } from "gl-matrix";
 import Mesh from "./rendering/mesh";
 import Shader from "./rendering/shader";
-import { downloadTextFile } from "./utils";
+import { calculateAverageNormals, downloadTextFile } from "./utils";
 import Model from "./rendering/model";
 import InputHandler from "./input";
 import Camera from "./rendering/camera";
 import Texture from "./rendering/texture";
-import Light from "./rendering/light";
+import { AmbientLight, DirectionalLight } from "./rendering/light";
 
 // -----------
 // -- SETUP --
@@ -35,7 +35,9 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <p id="${FPS_INFO_ID}">00.00 FPS</p>
       <p id="${FRAMETIME_INFO_ID}">0.000 ms</p>
     </div>
-    <canvas id="${CANVAS_ID}" width="${CANVAS_WIDTH}px" height="${CANVAS_HEIGHT}px"></canvas>
+    <canvas id="${CANVAS_ID}" width="${CANVAS_WIDTH}px" height="${CANVAS_HEIGHT}px">
+      Udemy OpenGL coursework converted to WebGL2
+    </canvas>
     <div id="light-control">
       <h3>Ambient Light</h3>
       <label for="${RED_INPUT_ID}">Red:
@@ -74,7 +76,8 @@ run()
 // ---------------
 
 const models = new Array<Model>();
-const lights = new Array<Light>();
+let ambientLight: AmbientLight | null = null;
+let directionalLight: DirectionalLight | null = null;
 
 const FOV = 45;
 const ASPECT_RATIO = CANVAS_WIDTH / CANVAS_HEIGHT;
@@ -104,14 +107,16 @@ function createPyramidMesh(): Mesh {
   ];
 
   const vertices = [
-    // X     Y     Z    U    V
-    -1.0, -1.0, 0.0, 0.0, 0.0,  // 0
-    0.0, -1.0, 1.0, 1.0, 0.0,   // 1 
-    1.0, -1.0, 0.0, 0.0, 0.0,   // 2
-    0.0, -1.0, -1.0, 1.0, 0.0,  // 3
-    0.0, 1.0, 0.0, 0.5, 1.0     // 4
+    // X     Y     Z    U    V    nX   nY   nZ
+    -1.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, // 0
+    0.0, -1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, // 1 
+    1.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, // 2
+    0.0, -1.0, -1.0, 1.0, 0.0, 0.0, 0.0, 0.0, // 3
+    0.0, 1.0, 0.0, 0.5, 1.0, 0.0, 0.0, 0.0, // 4
   ];
 
+
+  calculateAverageNormals(indices, vertices, 8, 5);
 
   return new Mesh(gl, vertices, indices);
 }
@@ -121,7 +126,7 @@ function updateAmbientLight(): void {
   const green = greenInput.valueAsNumber;
   const blue = blueInput.valueAsNumber;
 
-  lights[0].setColor(red, green, blue);
+  ambientLight?.setColor(red, green, blue);
 }
 
 function updatePerformanceInfo(): void {
@@ -185,7 +190,7 @@ function update(time: DOMHighResTimeStamp): void {
     const viewMatrix = camera.getViewMatrix();
     // Render models
     for (const model of models) {
-      model.render(projectionMatrix, viewMatrix, lights);
+      model.render(projectionMatrix, viewMatrix, directionalLight);
     }
   }
 
@@ -234,9 +239,11 @@ async function run(): Promise<void> {
     console.error(reason);
   }
 
-  const ambientLight = new Light(gl);
-
-  lights.push(ambientLight);
+  ambientLight = new AmbientLight(gl);
+  directionalLight = new DirectionalLight(gl);
+  directionalLight.setDirection(2.0, -1, -2);
+  directionalLight.setIntensity(0.2);
+  directionalLight.setDiffuseIntensity(1);
 
   // Set up depth buffer
   gl.enable(gl.DEPTH_TEST);

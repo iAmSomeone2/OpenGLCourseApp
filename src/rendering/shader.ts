@@ -1,18 +1,46 @@
-export default class Shader {
+import { GL2Object } from "./abstractions";
+import { LightUniforms } from "./light";
+
+export default class Shader extends GL2Object {
     private glShader: WebGLProgram;
     private uniformProjection: WebGLUniformLocation;
     private uniformModel: WebGLUniformLocation;
     private uniformView: WebGLUniformLocation;
-    private uniformAmbientIntensity: WebGLUniformLocation;
-    private uniformAmbientColor: WebGLUniformLocation;
+    private lightUniforms: LightUniforms;
 
-    protected constructor(program: WebGLProgram, projectionLoc: WebGLUniformLocation, modelLoc: WebGLUniformLocation, viewLoc: WebGLUniformLocation, intensityLoc: WebGLUniformLocation, colorLoc: WebGLUniformLocation) {
+    protected constructor(gl: WebGL2RenderingContext, program: WebGLProgram, projectionLoc: WebGLUniformLocation, modelLoc: WebGLUniformLocation, viewLoc: WebGLUniformLocation, lightUniforms: LightUniforms) {
+        super(gl);
         this.glShader = program;
         this.uniformProjection = projectionLoc;
         this.uniformModel = modelLoc;
         this.uniformView = viewLoc;
-        this.uniformAmbientIntensity = intensityLoc;
-        this.uniformAmbientColor = colorLoc;
+        this.lightUniforms = lightUniforms;
+    }
+
+    private static getLightUniformLocations(gl: WebGL2RenderingContext, shaderProgram: WebGLProgram): LightUniforms {
+        const intensity = gl.getUniformLocation(shaderProgram, "directionalLight.intensity");
+        if (!intensity) {
+            throw Error("Failed to get uniform location for 'directionalLight.intensity'");
+        }
+        const color = gl.getUniformLocation(shaderProgram, "directionalLight.color");
+        if (!color) {
+            throw Error("Failed to get uniform location for 'directionalLight.color'");
+        }
+        const diffuseIntensity = gl.getUniformLocation(shaderProgram, "directionalLight.diffuseIntensity");
+        if (!diffuseIntensity) {
+            throw Error("Failed to get uniform location for 'directionalLight.diffuseIntensity'");
+        }
+        const direction = gl.getUniformLocation(shaderProgram, "directionalLight.direction");
+        if (!direction) {
+            throw Error("Failed to get uniform location for 'directionalLight.direction'");
+        }
+
+        return {
+            intensity,
+            color,
+            direction,
+            diffuseIntensity
+        }
     }
 
     public static createFromStrings(gl: WebGL2RenderingContext, vertexSrc: string, fragmentSrc: string): Shader {
@@ -32,16 +60,9 @@ export default class Shader {
         if (!viewModel) {
             throw Error("Failed to get uniform location for 'view'");
         }
-        const intensity = gl.getUniformLocation(shaderProgram, "directionalLight.intensity");
-        if (!intensity) {
-            throw Error("Failed to get uniform location for 'directionalLight.intensity'");
-        }
-        const color = gl.getUniformLocation(shaderProgram, "directionalLight.color");
-        if (!color) {
-            throw Error("Failed to get uniform location for 'directionalLight.color'");
-        }
+        const lightUniforms = Shader.getLightUniformLocations(gl, shaderProgram);
 
-        return new Shader(shaderProgram, projectionModel, uniformModel, viewModel, intensity, color);
+        return new Shader(gl, shaderProgram, projectionModel, uniformModel, viewModel, lightUniforms);
     }
 
     private static compileShader(gl: WebGL2RenderingContext, src: string, type: number): WebGLShader {
@@ -96,19 +117,15 @@ export default class Shader {
         return this.uniformView;
     }
 
-    public getAmbientIntensityLoc(): WebGLUniformLocation {
-        return this.uniformAmbientIntensity;
+    public getLightUniforms(): LightUniforms {
+        return this.lightUniforms;
     }
 
-    public getAmbientColorLoc(): WebGLUniformLocation {
-        return this.uniformAmbientColor;
+    public use(): void {
+        this.gl.useProgram(this.glShader);
     }
 
-    public use(gl: WebGL2RenderingContext): void {
-        gl.useProgram(this.glShader);
-    }
-
-    public clear(gl: WebGL2RenderingContext): void {
-        gl.deleteProgram(this.glShader);
+    public clear(): void {
+        this.gl.deleteProgram(this.glShader);
     }
 }
