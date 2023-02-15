@@ -1,8 +1,8 @@
 import "./style.css";
 import vertexShaderUrl from "./shaders/shader.vs.glsl?url";
 import fragmentShaderUrl from "./shaders/shader.fs.glsl?url";
-import woodTexture1Url from "../public/textures/wood1.jpg?url";
-import woodTexture2Url from "../public/textures/wood2.jpg?url";
+import woodTexture1Url from "/textures/wood1.jpg?url";
+import woodTexture2Url from "/textures/wood2.jpg?url";
 
 import { mat4 } from "gl-matrix";
 import Mesh from "./rendering/mesh";
