@@ -1,11 +1,16 @@
 import { mat4 } from "gl-matrix";
+import { GL2Object } from "./abstractions";
 
 const TO_RADIANS = Math.PI / 180;
 
-export default class RenderNode {
+export default class RenderNode extends GL2Object {
     private scale: number[] = [1, 1, 1];
     private translation: number[] = [0, 0, 0];
     private rotation: number[] = [0, 0, 0];
+
+    constructor(gl: WebGL2RenderingContext) {
+        super(gl);
+    }
 
     public setScale(x: number, y: number, z: number): void {
         this.scale = [x, y, z];
