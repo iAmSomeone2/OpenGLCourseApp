@@ -1,14 +1,10 @@
 export default class Texture {
     private gl: WebGL2RenderingContext;
     private glTexture: WebGLTexture;
-    private width: number;
-    private height: number;
 
-    protected constructor(gl: WebGL2RenderingContext, tex: WebGLTexture, width: number, height: number) {
+    protected constructor(gl: WebGL2RenderingContext, tex: WebGLTexture) {
         this.gl = gl;
         this.glTexture = tex;
-        this.width = width;
-        this.height = height;
     }
 
     public static createPlaceholder(gl: WebGL2RenderingContext): Texture {
@@ -38,7 +34,7 @@ export default class Texture {
         }
         gl.bindTexture(gl.TEXTURE_2D, null);
 
-        return new Texture(gl, glTexture, width, height);
+        return new Texture(gl, glTexture);
     }
 
     public static async createFromUrl(gl: WebGL2RenderingContext, imgUrl: string): Promise<Texture> {
@@ -64,7 +60,7 @@ export default class Texture {
                     gl.generateMipmap(gl.TEXTURE_2D);
                 }
                 gl.bindTexture(gl.TEXTURE_2D, null);
-                resolve(new Texture(gl, glTexture, image.width, image.height))
+                resolve(new Texture(gl, glTexture))
             };
             image.onerror = (_event, _source, _lineno, _colno, error) => {
                 reject(error);
