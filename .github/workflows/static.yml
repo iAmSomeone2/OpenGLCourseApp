@@ -24,6 +24,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3.3.0
+        with:
+          lfs: true
       - name: Setup Node.js environment
         uses: actions/setup-node@v3.6.0
         with:
