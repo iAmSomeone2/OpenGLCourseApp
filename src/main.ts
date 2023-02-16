@@ -12,7 +12,7 @@ import Model from "./rendering/model";
 import InputHandler from "./input";
 import Camera from "./rendering/camera";
 import Texture from "./rendering/texture";
-import { AmbientLight, DirectionalLight } from "./rendering/light";
+import { DirectionalLight } from "./rendering/light";
 
 // -----------
 // -- SETUP --
@@ -76,7 +76,7 @@ run()
 // ---------------
 
 const models = new Array<Model>();
-let ambientLight: AmbientLight | null = null;
+// let ambientLight: AmbientLight | null = null;
 let directionalLight: DirectionalLight | null = null;
 
 const FOV = 45;
@@ -239,7 +239,7 @@ async function run(): Promise<void> {
     console.error(reason);
   }
 
-  ambientLight = new AmbientLight(gl);
+  // ambientLight = new AmbientLight(gl);
   directionalLight = new DirectionalLight(gl);
   directionalLight.setDirection(2.0, -1, -2);
   directionalLight.setIntensity(0.2);
