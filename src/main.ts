@@ -12,14 +12,14 @@ import Model from "./rendering/model";
 import InputHandler from "./input";
 import Camera from "./rendering/camera";
 import Texture from "./rendering/texture";
-import { AmbientLight, DirectionalLight } from "./rendering/light";
+import { DirectionalLight } from "./rendering/light";
 
 // -----------
 // -- SETUP --
 // -----------
 
-const CANVAS_WIDTH = 1000;
-const CANVAS_HEIGHT = 800;
+const CANVAS_WIDTH = 800;
+const CANVAS_HEIGHT = 600;
 
 const CANVAS_ID = "gl-app";
 const PERF_INFO_ID = "perf-info";

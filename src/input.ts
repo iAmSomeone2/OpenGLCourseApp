@@ -15,7 +15,7 @@ export default class InputHandler {
         this.keyEvents = new Array<KeyboardEvent>();
 
         this.canvas.onpointerdown = (e: PointerEvent) => {
-            InputHandler.beginInpuCapture(e, this);
+            InputHandler.beginInputCapture(e, this);
         }
         this.canvas.onpointerup = (e: PointerEvent) => {
             InputHandler.endInputCapture(e, this);
@@ -28,7 +28,7 @@ export default class InputHandler {
         this.lastMovement = this.lastPolledPointerPosition;
     }
 
-    private static beginInpuCapture(e: PointerEvent, inputHandler: InputHandler): void {
+    private static beginInputCapture(_e: PointerEvent, inputHandler: InputHandler): void {
         inputHandler.canvas.onpointermove = (e: PointerEvent) => {
             InputHandler.handleMouseMovement(e, inputHandler);
         }
@@ -42,7 +42,7 @@ export default class InputHandler {
         inputHandler.canvas.requestPointerLock();
     }
 
-    private static endInputCapture(e: PointerEvent, inputHandler: InputHandler): void {
+    private static endInputCapture(_e: PointerEvent, inputHandler: InputHandler): void {
         inputHandler.canvas.onpointermove = null;
         document.onkeydown = null;
         document.onkeyup = null;
