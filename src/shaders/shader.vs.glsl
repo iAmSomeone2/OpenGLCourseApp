@@ -13,14 +13,16 @@ uniform mat4 model;
 uniform mat4 projection;
 uniform mat4 view;
 
-out vec4 vertexColor;
 out vec2 texCoord0;
 out vec3 normal;
+out vec3 fragPos;
 
 void main() {
-    gl_Position = projection * view * model * vec4(position, 1.0);
+    vec4 modelPosition = model * vec4(position, 1.0);
+    gl_Position = projection * view * modelPosition;
 
     texCoord0 = texCoordIn;
 
     normal = mat3(transpose(inverse(model))) * norm;
+    fragPos = modelPosition.xyz;
 }

@@ -13,13 +13,14 @@ import InputHandler from "./input";
 import Camera from "./rendering/camera";
 import Texture from "./rendering/texture";
 import { DirectionalLight } from "./rendering/light";
+import Material from "./rendering/material";
 
 // -----------
 // -- SETUP --
 // -----------
 
-const CANVAS_WIDTH = 800;
-const CANVAS_HEIGHT = 600;
+const CANVAS_WIDTH = 1280;
+const CANVAS_HEIGHT = 720;
 
 const CANVAS_ID = "gl-app";
 const PERF_INFO_ID = "perf-info";
@@ -95,6 +96,29 @@ function createPyramidMesh(): Mesh {
   return new Mesh(gl, vertices, indices);
 }
 
+function createFloorMesh(): Mesh {
+  if (!gl) {
+    throw Error("Valid WebGL context required to construct model.");
+  }
+
+  const indices = [
+    0, 1, 3,
+    3, 1, 2
+  ];
+
+  const vertices = [
+    // X     Y     Z    U    V    nX   nY   nZ
+    -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, -1.0, 0.0, // 0
+    1.0, 0.0, 1.0, 1.0, 0.0, 0.0, -1.0, 0.0, // 1 
+    1.0, 0.0, -1.0, 1.0, 1.0, 0.0, -1.0, 0.0, // 2
+    -1.0, 0.0, -1.0, 0.0, 1.0, 0.0, -1.0, 0.0, // 3
+  ];
+
+  // calculateAverageNormals(indices, vertices, 8, 5);
+
+  return new Mesh(gl, vertices, indices);
+}
+
 function updatePerformanceInfo(): void {
   // Calculate average frametime and FPS
   let totalFt = 0;
@@ -145,8 +169,8 @@ function update(time: DOMHighResTimeStamp): void {
   camera.keyControl(keyEvents, deltaTime);
 
   const angleIncrement = (ANGLE_INCREMENT * deltaTime)
-  models[0].rotateBy(0, angleIncrement, 0);
-  models[1].rotateBy(0, angleIncrement, 0);
+  models[0].rotateBy(0, angleIncrement * 2, angleIncrement * 0.5);
+  // models[1].rotateBy(0, angleIncrement, 0);
 
   // Draw
   {
@@ -156,7 +180,7 @@ function update(time: DOMHighResTimeStamp): void {
     const viewMatrix = camera.getViewMatrix();
     // Render models
     for (const model of models) {
-      model.render(projectionMatrix, viewMatrix, directionalLight);
+      model.render(projectionMatrix, viewMatrix, camera.getPosition(), directionalLight);
     }
   }
 
@@ -185,29 +209,42 @@ async function run(): Promise<void> {
 
   // Create models
   const pyramidMesh = createPyramidMesh();
+  const material = new Material(gl, 0.5, 8);
+
+  // models.push(new Model(gl, pyramidMesh, axisShader));
+  // models[0].setTranslation(0, -0.5, -2.5);
+  // models[0].setScale(0.45, 0.45, 0.45);
+  // models[0].setRotation(180, 0, 0);
+  // try {
+  //   models[0].setAlbedo(await texPromise0);
+  // } catch (reason) {
+  //   console.error(reason);
+  // }
+  // models[0].setMaterial(material);
 
   models.push(new Model(gl, pyramidMesh, axisShader));
-  models[0].setTranslation(0, -0.5, -2.5);
+  models[0].setTranslation(0, 0, -2.5);
   models[0].setScale(0.45, 0.45, 0.45);
-  models[0].setRotation(180, 0, 0);
   try {
-    models[0].setAlbedo(await texPromise0);
+    models[0].setAlbedo(await texPromise1);
   } catch (reason) {
     console.error(reason);
   }
+  models[0].setMaterial(material);
 
-  models.push(new Model(gl, pyramidMesh, axisShader));
-  models[1].setTranslation(0, 0.5, -2.5);
-  models[1].setScale(0.45, 0.45, 0.45);
+  models.push(new Model(gl, createFloorMesh(), axisShader));
+  models[1].setTranslation(0, -0.98, -2.5);
+  models[1].setScale(10, 10, 10);
   try {
-    models[1].setAlbedo(await texPromise1);
+    models[1].setAlbedo(await texPromise0);
   } catch (reason) {
     console.error(reason);
   }
+  models[1].setMaterial(material);
 
   directionalLight = new DirectionalLight(gl);
   directionalLight.setDirection(2.0, -1, -2);
-  directionalLight.setIntensity(0.1);
+  directionalLight.setIntensity(0.3);
   directionalLight.setDiffuseIntensity(1);
 
   // Set up depth buffer

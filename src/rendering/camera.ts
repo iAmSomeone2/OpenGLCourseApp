@@ -108,4 +108,8 @@ export default class Camera {
 
         return viewMatrix;
     }
+
+    public getPosition(): vec3 {
+        return this.position;
+    }
 }

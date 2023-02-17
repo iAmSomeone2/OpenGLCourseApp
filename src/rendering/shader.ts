@@ -1,20 +1,25 @@
 import { GL2Object } from "./abstractions";
 import { LightUniforms } from "./light";
+import { MaterialUniforms } from "./material";
 
 export default class Shader extends GL2Object {
     private glShader: WebGLProgram;
     private uniformProjection: WebGLUniformLocation;
     private uniformModel: WebGLUniformLocation;
     private uniformView: WebGLUniformLocation;
+    private eyePos: WebGLUniformLocation;
     private lightUniforms: LightUniforms;
+    private materialUniforms: MaterialUniforms;
 
-    protected constructor(gl: WebGL2RenderingContext, program: WebGLProgram, projectionLoc: WebGLUniformLocation, modelLoc: WebGLUniformLocation, viewLoc: WebGLUniformLocation, lightUniforms: LightUniforms) {
+    protected constructor(gl: WebGL2RenderingContext, program: WebGLProgram, projectionLoc: WebGLUniformLocation, modelLoc: WebGLUniformLocation, viewLoc: WebGLUniformLocation, eyeLoc: WebGLUniformLocation, lightUniforms: LightUniforms, materialUniforms: MaterialUniforms) {
         super(gl);
         this.glShader = program;
         this.uniformProjection = projectionLoc;
         this.uniformModel = modelLoc;
         this.uniformView = viewLoc;
+        this.eyePos = eyeLoc;
         this.lightUniforms = lightUniforms;
+        this.materialUniforms = materialUniforms;
     }
 
     private static getLightUniformLocations(gl: WebGL2RenderingContext, shaderProgram: WebGLProgram): LightUniforms {
@@ -43,6 +48,22 @@ export default class Shader extends GL2Object {
         }
     }
 
+    public static getMaterialUniformLocations(gl: WebGL2RenderingContext, shaderProgram: WebGLProgram): MaterialUniforms {
+        const specularIntensity = gl.getUniformLocation(shaderProgram, "material.specularIntensity");
+        if (!specularIntensity) {
+            throw Error("Failed to get uniform location for 'material.specularIntensity'");
+        }
+        const shininess = gl.getUniformLocation(shaderProgram, "material.shininess");
+        if (!shininess) {
+            throw Error("Failed to get uniform location for 'material.shininess'");
+        }
+
+        return {
+            specularIntensity,
+            shininess
+        }
+    }
+
     public static createFromStrings(gl: WebGL2RenderingContext, vertexSrc: string, fragmentSrc: string): Shader {
         const vertexShader = Shader.compileShader(gl, vertexSrc, gl.VERTEX_SHADER);
         const fragmentShader = Shader.compileShader(gl, fragmentSrc, gl.FRAGMENT_SHADER);
@@ -60,9 +81,14 @@ export default class Shader extends GL2Object {
         if (!viewModel) {
             throw Error("Failed to get uniform location for 'view'");
         }
+        const eyePos = gl.getUniformLocation(shaderProgram, "eyePos");
+        if (!eyePos) {
+            throw Error("Failed to get uniform location for 'eyePos'");
+        }
         const lightUniforms = Shader.getLightUniformLocations(gl, shaderProgram);
+        const materialUniforms = Shader.getMaterialUniformLocations(gl, shaderProgram);
 
-        return new Shader(gl, shaderProgram, projectionModel, uniformModel, viewModel, lightUniforms);
+        return new Shader(gl, shaderProgram, projectionModel, uniformModel, viewModel, eyePos, lightUniforms, materialUniforms);
     }
 
     private static compileShader(gl: WebGL2RenderingContext, src: string, type: number): WebGLShader {
@@ -117,8 +143,16 @@ export default class Shader extends GL2Object {
         return this.uniformView;
     }
 
+    public getEyePosition(): WebGLUniformLocation {
+        return this.eyePos;
+    }
+
     public getLightUniforms(): LightUniforms {
         return this.lightUniforms;
+    }
+
+    public getMaterialUniforms(): MaterialUniforms {
+        return this.materialUniforms;
     }
 
     public use(): void {
