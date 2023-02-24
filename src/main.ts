@@ -3,6 +3,7 @@ import vertexShaderUrl from "./shaders/shader.vs.glsl?url";
 import fragmentShaderUrl from "./shaders/shader.fs.glsl?url";
 import woodTexture1Url from "/textures/wood1.jpg?url";
 import woodTexture2Url from "/textures/wood2.jpg?url";
+import whiteTextureUrl from "/textures/white_square.png?url";
 
 import { mat4 } from "gl-matrix";
 import Mesh from "./rendering/mesh";
@@ -124,28 +125,28 @@ function createFloorMesh(): Mesh {
 function createPointLights(): void {
   // Light 1
   const pLight1 = new PointLight(gl!, 0.3, 0.2, 0.1);
-  pLight1.setColor(0.0, 1.0, 0.0);
-  pLight1.setPosition(-4.0, 2.0, 0.0);
-  pLight1.setIntensity(0.1);
-  pLight1.setDiffuseIntensity(1.0);
+  pLight1.setColor(1.0, 0.0, 0.0);
+  pLight1.setPosition(-2.0, 0, 0);
+  pLight1.setIntensity(0.01);
+  pLight1.setDiffuseIntensity(2.0);
 
   pointLights.push(pLight1);
 
   // Light 2
   const pLight2 = new PointLight(gl!, 0.3, 0.2, 0.1);
   pLight2.setColor(0.0, 0.0, 1.0);
-  pLight2.setPosition(4.0, 2.0, 0.0);
-  pLight2.setIntensity(0.1);
-  pLight2.setDiffuseIntensity(1.0);
+  pLight2.setPosition(2.0, 0, 0.0);
+  pLight2.setIntensity(0.01);
+  pLight2.setDiffuseIntensity(2.0);
 
   pointLights.push(pLight2);
 
   // Light 3
   const pLight3 = new PointLight(gl!, 0.3, 0.2, 0.1);
-  pLight3.setColor(1.0, 0.0, 0.0);
-  pLight3.setPosition(0.0, 2.0, -4.0);
-  pLight3.setIntensity(0.1);
-  pLight3.setDiffuseIntensity(1.0);
+  pLight3.setColor(0.0, 1.0, 0.0);
+  pLight3.setPosition(0.0, 0, 2.0);
+  pLight3.setIntensity(0.01);
+  pLight3.setDiffuseIntensity(2.0);
 
   pointLights.push(pLight3);
 }
@@ -215,7 +216,7 @@ function update(time: DOMHighResTimeStamp): void {
   camera.keyControl(keyEvents, deltaTime);
 
   const angleIncrement = (ANGLE_INCREMENT * deltaTime)
-  models[0].rotateBy(0, angleIncrement * 2, 0);
+  models[0].rotateBy(0, angleIncrement, 0);
   // models[1].rotateBy(0, angleIncrement, 0);
 
   // Draw
@@ -240,7 +241,8 @@ async function run(): Promise<void> {
 
   // Load textures
   const texPromise0 = Texture.createFromUrl(gl, woodTexture1Url);
-  const texPromise1 = Texture.createFromUrl(gl, woodTexture2Url);
+  // const texPromise1 = Texture.createFromUrl(gl, woodTexture2Url);
+  const texPromise2 = Texture.createFromUrl(gl, whiteTextureUrl);
 
   // Create shader program
   const vertexShaderSrc = await downloadTextFile(vertexShaderUrl);
@@ -248,11 +250,12 @@ async function run(): Promise<void> {
 
   const axisShader = Shader.createFromStrings(gl, vertexShaderSrc, fragmentShaderSrc);
 
-  camera = new Camera();
+  camera = new Camera([0, 0, 2.5]);
 
   // Create models
   const pyramidMesh = createPyramidMesh();
   const material = new Material(gl, 0.1, 2);
+  const shinyMaterial = new Material(gl, 10, 256);
 
   // models.push(new Model(gl, pyramidMesh, axisShader));
   // models[0].setTranslation(0, -0.5, -2.5);
@@ -266,30 +269,29 @@ async function run(): Promise<void> {
   // models[0].setMaterial(material);
 
   models.push(new Model(gl, pyramidMesh, axisShader));
-  models[0].setTranslation(0, 0, -2.5);
   models[0].setScale(0.45, 0.45, 0.45);
   try {
-    models[0].setAlbedo(await texPromise1);
+    models[0].setAlbedo(await texPromise0);
   } catch (reason) {
     console.error(reason);
   }
   models[0].setMaterial(material);
 
   models.push(new Model(gl, createFloorMesh(), axisShader));
-  models[1].setTranslation(0, -0.98, -2.5);
+  models[1].setTranslation(0, -0.98, 0.0);
   models[1].setScale(10, 10, 10);
   try {
-    models[1].setAlbedo(await texPromise0);
+    models[1].setAlbedo(await texPromise2);
   } catch (reason) {
     console.error(reason);
   }
-  models[1].setMaterial(material);
+  models[1].setMaterial(shinyMaterial);
 
   // Set up directional light
 
   directionalLight = new DirectionalLight(gl);
-  directionalLight.setDirection(2.0, -1, -2);
-  directionalLight.setIntensity(0.02);
+  directionalLight.setDirection(-1.0, -1, 0.0);
+  directionalLight.setIntensity(0.3);
   directionalLight.setDiffuseIntensity(0.4);
 
   // Set up point lights
