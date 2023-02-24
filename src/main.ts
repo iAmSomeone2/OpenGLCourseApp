@@ -12,28 +12,29 @@ import Model from "./rendering/model";
 import InputHandler from "./input";
 import Camera from "./rendering/camera";
 import Texture from "./rendering/texture";
-import { DirectionalLight } from "./rendering/light";
+import { DirectionalLight, PointLight } from "./rendering/light";
 import Material from "./rendering/material";
 
 // -----------
 // -- SETUP --
 // -----------
 
-const CANVAS_WIDTH = 1280;
-const CANVAS_HEIGHT = 720;
+// const CANVAS_WIDTH = 1280;
+// const CANVAS_HEIGHT = 720;
 
 const CANVAS_ID = "gl-app";
 const PERF_INFO_ID = "perf-info";
 const FPS_INFO_ID = "fps-info";
 const FRAMETIME_INFO_ID = "frametime-info";
+const RESOLUTION_INFO = "resolution-info";
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-    <div id="${PERF_INFO_ID}">
-      <p id="${FPS_INFO_ID}">00.00 FPS</p>
-      <p id="${FRAMETIME_INFO_ID}">0.000 ms</p>
-    </div>
-    <canvas id="${CANVAS_ID}" width="${CANVAS_WIDTH}px" height="${CANVAS_HEIGHT}px">
-      Udemy OpenGL coursework converted to WebGL2
+      <div id="${PERF_INFO_ID}">
+        <p id="${FPS_INFO_ID}" class="stat">00.00 FPS</p>
+        <p id="${FRAMETIME_INFO_ID}" class="stat">0.000 ms</p>
+        <p id="${RESOLUTION_INFO}" class="stat">0000 x 0000</p>
+      </div>
+    <canvas id="${CANVAS_ID}">
     </canvas>
 `;
 
@@ -54,9 +55,10 @@ run()
 
 const models = new Array<Model>();
 let directionalLight: DirectionalLight | null = null;
+let pointLights: PointLight[] = [];
 
 const FOV = 45;
-const ASPECT_RATIO = CANVAS_WIDTH / CANVAS_HEIGHT;
+// const ASPECT_RATIO = CANVAS_WIDTH / CANVAS_HEIGHT;
 
 const ANGLE_INCREMENT = 80.0;
 
@@ -109,14 +111,43 @@ function createFloorMesh(): Mesh {
   const vertices = [
     // X     Y     Z    U    V    nX   nY   nZ
     -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, -1.0, 0.0, // 0
-    1.0, 0.0, 1.0, 1.0, 0.0, 0.0, -1.0, 0.0, // 1 
-    1.0, 0.0, -1.0, 1.0, 1.0, 0.0, -1.0, 0.0, // 2
-    -1.0, 0.0, -1.0, 0.0, 1.0, 0.0, -1.0, 0.0, // 3
+    1.0, 0.0, 1.0, 10.0, 0.0, 0.0, -1.0, 0.0, // 1 
+    1.0, 0.0, -1.0, 10.0, 10.0, 0.0, -1.0, 0.0, // 2
+    -1.0, 0.0, -1.0, 0.0, 10.0, 0.0, -1.0, 0.0, // 3
   ];
 
   // calculateAverageNormals(indices, vertices, 8, 5);
 
   return new Mesh(gl, vertices, indices);
+}
+
+function createPointLights(): void {
+  // Light 1
+  const pLight1 = new PointLight(gl!, 0.3, 0.2, 0.1);
+  pLight1.setColor(0.0, 1.0, 0.0);
+  pLight1.setPosition(-4.0, 2.0, 0.0);
+  pLight1.setIntensity(0.1);
+  pLight1.setDiffuseIntensity(1.0);
+
+  pointLights.push(pLight1);
+
+  // Light 2
+  const pLight2 = new PointLight(gl!, 0.3, 0.2, 0.1);
+  pLight2.setColor(0.0, 0.0, 1.0);
+  pLight2.setPosition(4.0, 2.0, 0.0);
+  pLight2.setIntensity(0.1);
+  pLight2.setDiffuseIntensity(1.0);
+
+  pointLights.push(pLight2);
+
+  // Light 3
+  const pLight3 = new PointLight(gl!, 0.3, 0.2, 0.1);
+  pLight3.setColor(1.0, 0.0, 0.0);
+  pLight3.setPosition(0.0, 2.0, -4.0);
+  pLight3.setIntensity(0.1);
+  pLight3.setDiffuseIntensity(1.0);
+
+  pointLights.push(pLight3);
 }
 
 function updatePerformanceInfo(): void {
@@ -150,6 +181,21 @@ function updatePerformanceInfo(): void {
   frametimeInfo.innerText = `${msFormat.format(avgFt * 1000)}`;
 }
 
+function resizeViewport(): void {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const aspectRatio = gl!.canvas.width / gl!.canvas.height;
+  // Set up projection matrix
+  mat4.perspective(projectionMatrix, FOV, aspectRatio, 0.1, 100.0);
+  // Update viewport
+  gl?.viewport(0, 0, gl!.canvas.width, gl!.canvas.height);
+
+  // Update resolution info
+  const resolutionInfo = document.getElementById(RESOLUTION_INFO) as HTMLParagraphElement;
+  resolutionInfo.innerText = `${canvas.width} x ${canvas.height}`;
+}
+
 function update(time: DOMHighResTimeStamp): void {
   if (!gl || !camera) {
     console.error("A required rendering component is 'null'");
@@ -169,7 +215,7 @@ function update(time: DOMHighResTimeStamp): void {
   camera.keyControl(keyEvents, deltaTime);
 
   const angleIncrement = (ANGLE_INCREMENT * deltaTime)
-  models[0].rotateBy(0, angleIncrement * 2, angleIncrement * 0.5);
+  models[0].rotateBy(0, angleIncrement * 2, 0);
   // models[1].rotateBy(0, angleIncrement, 0);
 
   // Draw
@@ -180,7 +226,7 @@ function update(time: DOMHighResTimeStamp): void {
     const viewMatrix = camera.getViewMatrix();
     // Render models
     for (const model of models) {
-      model.render(projectionMatrix, viewMatrix, camera.getPosition(), directionalLight);
+      model.render(projectionMatrix, viewMatrix, camera.getPosition(), directionalLight!, pointLights);
     }
   }
 
@@ -204,12 +250,9 @@ async function run(): Promise<void> {
 
   camera = new Camera();
 
-  // Set up projection matrix
-  mat4.perspective(projectionMatrix, FOV, ASPECT_RATIO, 0.1, 100.0);
-
   // Create models
   const pyramidMesh = createPyramidMesh();
-  const material = new Material(gl, 0.5, 8);
+  const material = new Material(gl, 0.1, 2);
 
   // models.push(new Model(gl, pyramidMesh, axisShader));
   // models[0].setTranslation(0, -0.5, -2.5);
@@ -242,15 +285,23 @@ async function run(): Promise<void> {
   }
   models[1].setMaterial(material);
 
+  // Set up directional light
+
   directionalLight = new DirectionalLight(gl);
   directionalLight.setDirection(2.0, -1, -2);
-  directionalLight.setIntensity(0.3);
-  directionalLight.setDiffuseIntensity(1);
+  directionalLight.setIntensity(0.02);
+  directionalLight.setDiffuseIntensity(0.4);
+
+  // Set up point lights
+  createPointLights();
 
   // Set up depth buffer
   gl.enable(gl.DEPTH_TEST);
 
-  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+  resizeViewport();
+  window.onresize = (_ev) => {
+    resizeViewport();
+  }
 
   setInterval(updatePerformanceInfo, 500);
 

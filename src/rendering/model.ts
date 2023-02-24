@@ -1,5 +1,5 @@
 import { mat4, vec3 } from "gl-matrix";
-import { AmbientLight as Light } from "./light";
+import { DirectionalLight, PointLight } from "./light";
 import Material from "./material";
 import Mesh from "./mesh";
 import RenderNode from "./render-node";
@@ -29,16 +29,17 @@ export default class Model extends RenderNode {
         this.material = material;
     }
 
-    public render(projectionMatrix: mat4, viewMatrix: mat4, eyePos: vec3, light?: Light | null) {
+    public render(projectionMatrix: mat4, viewMatrix: mat4, eyePos: vec3, dLight: DirectionalLight, pLights: PointLight[]) {
         this.shader.use();
         {
             this.gl.uniformMatrix4fv(this.shader.getUniformModel(), false, new Float32Array(this.modelMatrix()));
             this.gl.uniformMatrix4fv(this.shader.getUniformProjection(), false, new Float32Array(projectionMatrix));
             this.gl.uniformMatrix4fv(this.shader.getViewModel(), false, new Float32Array(viewMatrix));
-
             this.gl.uniform3f(this.shader.getEyePosition(), eyePos[0], eyePos[1], eyePos[2]);
 
-            light?.use(this.shader.getLightUniforms());
+            this.shader.setDirectionalLight(dLight);
+            this.shader.setPointLights(pLights);
+
             this.material?.use(this.shader.getMaterialUniforms());
             this.albedoTexture.useTexture();
             this.mesh.render();

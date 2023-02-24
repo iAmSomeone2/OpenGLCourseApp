@@ -1,6 +1,20 @@
 import { GL2Object } from "./abstractions";
-import { LightUniforms } from "./light";
+import { DirectionalLight, DirectionalLightUniforms, PointLight, PointLightUniforms } from "./light";
 import { MaterialUniforms } from "./material";
+
+export const MAX_POINT_LIGHTS = 3;
+
+interface ShaderConstructionParams {
+    program: WebGLProgram;
+    projectionLocation: WebGLUniformLocation;
+    modelLocation: WebGLUniformLocation;
+    viewLocation: WebGLUniformLocation;
+    eyeLocation: WebGLUniformLocation;
+    directionalLightUniforms: DirectionalLightUniforms;
+    pointLightUniformList: PointLightUniforms[];
+    pointLightCountLocation: WebGLUniformLocation;
+    materialUniforms: MaterialUniforms;
+}
 
 export default class Shader extends GL2Object {
     private glShader: WebGLProgram;
@@ -8,32 +22,39 @@ export default class Shader extends GL2Object {
     private uniformModel: WebGLUniformLocation;
     private uniformView: WebGLUniformLocation;
     private eyePos: WebGLUniformLocation;
-    private lightUniforms: LightUniforms;
+
     private materialUniforms: MaterialUniforms;
 
-    protected constructor(gl: WebGL2RenderingContext, program: WebGLProgram, projectionLoc: WebGLUniformLocation, modelLoc: WebGLUniformLocation, viewLoc: WebGLUniformLocation, eyeLoc: WebGLUniformLocation, lightUniforms: LightUniforms, materialUniforms: MaterialUniforms) {
+    private directionalLightUniforms: DirectionalLightUniforms;
+    private pointLightUniformList: PointLightUniforms[];
+    private pointLightCountUniform: WebGLUniformLocation;
+
+
+    protected constructor(gl: WebGL2RenderingContext, params: ShaderConstructionParams) {
         super(gl);
-        this.glShader = program;
-        this.uniformProjection = projectionLoc;
-        this.uniformModel = modelLoc;
-        this.uniformView = viewLoc;
-        this.eyePos = eyeLoc;
-        this.lightUniforms = lightUniforms;
-        this.materialUniforms = materialUniforms;
+        this.glShader = params.program;
+        this.uniformProjection = params.projectionLocation;
+        this.uniformModel = params.modelLocation;
+        this.uniformView = params.viewLocation;
+        this.eyePos = params.eyeLocation;
+        this.directionalLightUniforms = params.directionalLightUniforms;
+        this.pointLightUniformList = params.pointLightUniformList;
+        this.pointLightCountUniform = params.pointLightCountLocation;
+        this.materialUniforms = params.materialUniforms;
     }
 
-    private static getLightUniformLocations(gl: WebGL2RenderingContext, shaderProgram: WebGLProgram): LightUniforms {
-        const intensity = gl.getUniformLocation(shaderProgram, "directionalLight.intensity");
+    private static getDirectionalLightUniformLocations(gl: WebGL2RenderingContext, shaderProgram: WebGLProgram): DirectionalLightUniforms {
+        const intensity = gl.getUniformLocation(shaderProgram, "directionalLight.base.intensity");
         if (!intensity) {
-            throw Error("Failed to get uniform location for 'directionalLight.intensity'");
+            throw Error("Failed to get uniform location for 'directionalLight.base.intensity'");
         }
-        const color = gl.getUniformLocation(shaderProgram, "directionalLight.color");
+        const color = gl.getUniformLocation(shaderProgram, "directionalLight.base.color");
         if (!color) {
-            throw Error("Failed to get uniform location for 'directionalLight.color'");
+            throw Error("Failed to get uniform location for 'directionalLight.base.color'");
         }
-        const diffuseIntensity = gl.getUniformLocation(shaderProgram, "directionalLight.diffuseIntensity");
+        const diffuseIntensity = gl.getUniformLocation(shaderProgram, "directionalLight.base.diffuseIntensity");
         if (!diffuseIntensity) {
-            throw Error("Failed to get uniform location for 'directionalLight.diffuseIntensity'");
+            throw Error("Failed to get uniform location for 'directionalLight.base.diffuseIntensity'");
         }
         const direction = gl.getUniformLocation(shaderProgram, "directionalLight.direction");
         if (!direction) {
@@ -64,6 +85,49 @@ export default class Shader extends GL2Object {
         }
     }
 
+    public static getPointLightUniformLocations(gl: WebGL2RenderingContext, shaderProgram: WebGLProgram, index: number): PointLightUniforms {
+        const locBuff = `pointLights[${index}]`;
+
+        const intensity = gl.getUniformLocation(shaderProgram, `${locBuff}.base.intensity`);
+        if (!intensity) {
+            throw Error(`Failed to get uniform location for '${locBuff}.base.intensity'`);
+        }
+        const color = gl.getUniformLocation(shaderProgram, `${locBuff}.base.color`);
+        if (!color) {
+            throw Error(`Failed to get uniform location for '${locBuff}.base.color'`);
+        }
+        const diffuseIntensity = gl.getUniformLocation(shaderProgram, `${locBuff}.base.diffuseIntensity`);
+        if (!diffuseIntensity) {
+            throw Error(`Failed to get uniform location for '${locBuff}.base.diffuseIntensity'`);
+        }
+        const position = gl.getUniformLocation(shaderProgram, `${locBuff}.position`);
+        if (!position) {
+            throw Error(`Failed to get uniform location for '${locBuff}.position'`);
+        }
+        const constant = gl.getUniformLocation(shaderProgram, `${locBuff}.constant`);
+        if (!constant) {
+            throw Error(`Failed to get uniform location for '${locBuff}.constant'`);
+        }
+        const linear = gl.getUniformLocation(shaderProgram, `${locBuff}.linear`);
+        if (!linear) {
+            throw Error(`Failed to get uniform location for '${locBuff}.linear'`);
+        }
+        const exponent = gl.getUniformLocation(shaderProgram, `${locBuff}.exponent`);
+        if (!exponent) {
+            throw Error(`Failed to get uniform location for '${locBuff}.exponent'`);
+        }
+
+        return {
+            intensity,
+            color,
+            diffuseIntensity,
+            position,
+            constant,
+            linear,
+            exponent,
+        }
+    }
+
     public static createFromStrings(gl: WebGL2RenderingContext, vertexSrc: string, fragmentSrc: string): Shader {
         const vertexShader = Shader.compileShader(gl, vertexSrc, gl.VERTEX_SHADER);
         const fragmentShader = Shader.compileShader(gl, fragmentSrc, gl.FRAGMENT_SHADER);
@@ -85,10 +149,31 @@ export default class Shader extends GL2Object {
         if (!eyePos) {
             throw Error("Failed to get uniform location for 'eyePos'");
         }
-        const lightUniforms = Shader.getLightUniformLocations(gl, shaderProgram);
+        const directionalLightUniforms = Shader.getDirectionalLightUniformLocations(gl, shaderProgram);
+
+        const pointLightCountLocation = gl.getUniformLocation(shaderProgram, "pointLightCount");
+        if (!pointLightCountLocation) {
+            throw Error("Failed to get uniform location for 'pointLightCount'");
+        }
+
+        const pointLightUniformList: PointLightUniforms[] = [];
+        for (let i = 0; i < MAX_POINT_LIGHTS; i++) {
+            pointLightUniformList.push(Shader.getPointLightUniformLocations(gl, shaderProgram, i));
+        }
+
         const materialUniforms = Shader.getMaterialUniformLocations(gl, shaderProgram);
 
-        return new Shader(gl, shaderProgram, projectionModel, uniformModel, viewModel, eyePos, lightUniforms, materialUniforms);
+        return new Shader(gl, {
+            program: shaderProgram,
+            projectionLocation: projectionModel,
+            modelLocation: uniformModel,
+            viewLocation: viewModel,
+            eyeLocation: eyePos,
+            directionalLightUniforms: directionalLightUniforms,
+            pointLightUniformList,
+            pointLightCountLocation,
+            materialUniforms
+        });
     }
 
     private static compileShader(gl: WebGL2RenderingContext, src: string, type: number): WebGLShader {
@@ -131,6 +216,19 @@ export default class Shader extends GL2Object {
         return program;
     }
 
+    public setDirectionalLight(dLight: DirectionalLight): void {
+        dLight.use(this.directionalLightUniforms);
+    }
+
+    public setPointLights(pLights: PointLight[]): void {
+        const lightCount = Math.min(pLights.length, MAX_POINT_LIGHTS);
+
+        this.gl.uniform1ui(this.pointLightCountUniform, lightCount);
+        for (let i = 0; i < lightCount; i++) {
+            pLights[i].use(this.pointLightUniformList[i]);
+        }
+    }
+
     public getUniformProjection(): WebGLUniformLocation {
         return this.uniformProjection;
     }
@@ -147,8 +245,8 @@ export default class Shader extends GL2Object {
         return this.eyePos;
     }
 
-    public getLightUniforms(): LightUniforms {
-        return this.lightUniforms;
+    public getLightUniforms(): DirectionalLightUniforms {
+        return this.directionalLightUniforms;
     }
 
     public getMaterialUniforms(): MaterialUniforms {
